@@ -22,8 +22,16 @@ const hbCtaTextEl = document.getElementById("hbCtaText");
 const hbCtaHrefEl = document.getElementById("hbCtaHref");
 const hbSushiTitleEl = document.getElementById("hbSushiTitle");
 const hbSushiTextEl = document.getElementById("hbSushiText");
-const recipeVideoUrlEl = document.getElementById("recipeVideoUrl");
 const hbReloadBtn = document.getElementById("hbReloadBtn");
+
+const aboutForm = document.getElementById("aboutSectionForm");
+const aboutSubTitleInputEl = document.getElementById("aboutSubTitleInput");
+const aboutTitlePrefixInputEl = document.getElementById("aboutTitlePrefixInput");
+const aboutTitleHighlightInputEl = document.getElementById("aboutTitleHighlightInput");
+const aboutImageUrlInputEl = document.getElementById("aboutImageUrlInput");
+const aboutTextInputEl = document.getElementById("aboutTextInput");
+const aboutVideoUrlInputEl = document.getElementById("aboutVideoUrlInput");
+const aboutReloadBtn = document.getElementById("aboutReloadBtn");
 
 const brandsForm = document.getElementById("brandsForm");
 const brandsTitleInputEl = document.getElementById("brandsTitleInput");
@@ -33,6 +41,7 @@ const brandsBodyEl = document.getElementById("brandsBody");
 const brandsReloadBtn = document.getElementById("brandsReloadBtn");
 
 const homeBannerRef = doc(db, "siteSettings", "homeBanner");
+const aboutSectionRef = doc(db, "siteSettings", "aboutSection");
 const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
 const brandsRef = doc(db, "siteSettings", "brands");
 
@@ -144,11 +153,29 @@ async function loadHomeBannerSettings() {
     }
 }
 
-async function loadRecipeVideoSettings() {
+async function loadAboutSectionSettings() {
     try {
-        const snap = await getDoc(aboutVideoRef);
+        const snap = await getDoc(aboutSectionRef);
         const data = snap.exists() ? (snap.data() || {}) : {};
-        if (recipeVideoUrlEl) recipeVideoUrlEl.value = typeof data.recipeVideoUrl === "string" ? data.recipeVideoUrl : "";
+
+        if (aboutSubTitleInputEl) aboutSubTitleInputEl.value = typeof data.subTitle === "string" ? data.subTitle : "";
+        if (aboutTitlePrefixInputEl) aboutTitlePrefixInputEl.value = typeof data.titlePrefix === "string" ? data.titlePrefix : "";
+        if (aboutTitleHighlightInputEl) aboutTitleHighlightInputEl.value = typeof data.titleHighlight === "string" ? data.titleHighlight : "";
+        if (aboutTextInputEl) aboutTextInputEl.value = typeof data.text === "string" ? data.text : "";
+        if (aboutImageUrlInputEl) aboutImageUrlInputEl.value = typeof data.imageUrl === "string" ? data.imageUrl : "";
+        if (aboutVideoUrlInputEl) aboutVideoUrlInputEl.value = typeof data.videoUrl === "string" ? data.videoUrl : "";
+
+        if (aboutVideoUrlInputEl && !aboutVideoUrlInputEl.value.trim()) {
+            try {
+                const legacySnap = await getDoc(aboutVideoRef);
+                const legacyData = legacySnap.exists() ? (legacySnap.data() || {}) : {};
+                if (typeof legacyData.recipeVideoUrl === "string" && legacyData.recipeVideoUrl.trim()) {
+                    aboutVideoUrlInputEl.value = legacyData.recipeVideoUrl;
+                }
+            } catch {
+                // ignore
+            }
+        }
     } catch {
         // ignore
     }
@@ -187,10 +214,34 @@ if (hbForm) {
 
         try {
             await setDoc(homeBannerRef, payload, { merge: true });
-            await setDoc(aboutVideoRef, { recipeVideoUrl: recipeVideoUrlEl ? recipeVideoUrlEl.value : "", updatedAt: Date.now() }, { merge: true });
             showSuccess("Home banner updated.");
         } catch (err) {
             showError(err?.message || "Failed to save banner settings.");
+        }
+    });
+}
+
+if (aboutForm) {
+    aboutForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+
+        const payload = {
+            subTitle: aboutSubTitleInputEl ? aboutSubTitleInputEl.value : "",
+            titlePrefix: aboutTitlePrefixInputEl ? aboutTitlePrefixInputEl.value : "",
+            titleHighlight: aboutTitleHighlightInputEl ? aboutTitleHighlightInputEl.value : "",
+            text: aboutTextInputEl ? aboutTextInputEl.value : "",
+            imageUrl: aboutImageUrlInputEl ? aboutImageUrlInputEl.value : "",
+            videoUrl: aboutVideoUrlInputEl ? aboutVideoUrlInputEl.value : "",
+            updatedAt: Date.now(),
+        };
+
+        try {
+            await setDoc(aboutSectionRef, payload, { merge: true });
+            showSuccess("About section updated.");
+        } catch (err) {
+            showError(err?.message || "Failed to save About section.");
         }
     });
 }
@@ -255,8 +306,16 @@ if (hbReloadBtn) {
         clearError();
         clearSuccess();
         await loadHomeBannerSettings();
-        await loadRecipeVideoSettings();
         showSuccess("Banner settings loaded.");
+    });
+}
+
+if (aboutReloadBtn) {
+    aboutReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadAboutSectionSettings();
+        showSuccess("About settings loaded.");
     });
 }
 
@@ -289,7 +348,7 @@ onAuthStateChanged(auth, (user) => {
 
             if (adminUserEl) adminUserEl.textContent = `Logged in as: ${user.email || ""}`;
             await loadHomeBannerSettings();
-            await loadRecipeVideoSettings();
+            await loadAboutSectionSettings();
             await loadBrandsSettings();
         } catch {
             window.location.href = "account.html";

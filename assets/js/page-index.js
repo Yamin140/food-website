@@ -85,6 +85,68 @@ async function applyHomeBannerSettings() {
     }
 }
 
+async function applyAboutSectionSettings() {
+    const subTitleEl = document.getElementById("aboutSubTitle");
+    const titlePrefixEl = document.getElementById("aboutTitlePrefix");
+    const titleHighlightEl = document.getElementById("aboutTitleHighlight");
+    const textEl = document.getElementById("aboutText");
+    const imageEl = document.getElementById("aboutImage");
+    const videoLinkEl = document.getElementById("recipeVideoLink");
+
+    if (!subTitleEl && !titlePrefixEl && !titleHighlightEl && !textEl && !imageEl && !videoLinkEl) {
+        return { handledVideo: false };
+    }
+
+    let handledVideo = false;
+
+    try {
+        const snap = await getDoc(doc(db, "siteSettings", "aboutSection"));
+        if (!snap.exists()) return { handledVideo: false };
+
+        const data = snap.data() || {};
+
+        if (subTitleEl && typeof data.subTitle === "string" && data.subTitle.trim()) {
+            subTitleEl.textContent = data.subTitle.trim();
+        }
+
+        if (titlePrefixEl && typeof data.titlePrefix === "string") {
+            titlePrefixEl.textContent = data.titlePrefix;
+        }
+
+        if (titleHighlightEl && typeof data.titleHighlight === "string" && data.titleHighlight.trim()) {
+            titleHighlightEl.textContent = data.titleHighlight.trim();
+        }
+
+        if (textEl && typeof data.text === "string" && data.text.trim()) {
+            textEl.textContent = data.text.trim();
+        }
+
+        if (imageEl && typeof data.imageUrl === "string" && data.imageUrl.trim()) {
+            const finalUrl = normalizeDriveImageUrl(data.imageUrl);
+            if (finalUrl) {
+                imageEl.style.backgroundImage = `url(${finalUrl})`;
+            }
+        }
+
+        if (videoLinkEl && typeof data.videoUrl === "string" && data.videoUrl.trim()) {
+            const normalized = normalizeRecipeVideoUrl(data.videoUrl);
+            if (normalized) {
+                videoLinkEl.setAttribute("href", normalized.url);
+                if (normalized.type === "iframe") {
+                    videoLinkEl.setAttribute("data-type", "iframe");
+                } else {
+                    videoLinkEl.removeAttribute("data-type");
+                }
+                handledVideo = true;
+            }
+        }
+    } catch {
+        // ignore
+    }
+
+    return { handledVideo };
+}
+
 async function applyRecipeVideoSettings() {
     const linkEl = document.getElementById("recipeVideoLink");
     if (!linkEl) return;
@@ -151,5 +213,9 @@ async function applyBrandsSettings() {
 }
 
 applyHomeBannerSettings();
-applyRecipeVideoSettings();
+applyAboutSectionSettings().then((res) => {
+    if (!res?.handledVideo) {
+        applyRecipeVideoSettings();
+    }
+});
 applyBrandsSettings();
