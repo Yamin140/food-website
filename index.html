@@ -135,9 +135,9 @@
                     <div class="wrapper">
                         <div class="brands-element">
                             <div class="brand-title">
-                                <h5 class="h5-title">Trusted by 70+ companies</h5>
+                                <h5 id="brandsTitle" class="h5-title">Trusted by 70+ companies</h5>
                             </div>
-                            <div class="brands-row">
+                            <div id="brandsRow" class="brands-row">
                                 <div class="brands-box">
                                     <img src="assets/images/brands/b1.png" alt="not found">
                                 </div>
@@ -1221,6 +1221,38 @@
             return { url: raw, type: "auto" };
         }
 
+        function normalizeDriveImageUrl(inputUrl) {
+            const raw = (inputUrl || "").trim();
+            if (!raw) return null;
+
+            const thumbIdMatch = raw.match(/drive\.google\.com\/thumbnail\?[^#]*[?&]id=([^&]+)/i);
+            if (thumbIdMatch && thumbIdMatch[1]) {
+                return `https://drive.google.com/thumbnail?id=${thumbIdMatch[1]}&sz=w1000`;
+            }
+
+            const driveFileMatch = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+            if (driveFileMatch && driveFileMatch[1]) {
+                return `https://drive.google.com/thumbnail?id=${driveFileMatch[1]}&sz=w1000`;
+            }
+
+            const driveOpenIdMatch = raw.match(/[?&]id=([^&]+)/i);
+            if (raw.includes("drive.google.com") && driveOpenIdMatch && driveOpenIdMatch[1]) {
+                return `https://drive.google.com/thumbnail?id=${driveOpenIdMatch[1]}&sz=w1000`;
+            }
+
+            const driveUcIdMatch = raw.match(/drive\.google\.com\/uc\?.*?[?&]id=([^&]+)/i);
+            if (driveUcIdMatch && driveUcIdMatch[1]) {
+                return `https://drive.google.com/thumbnail?id=${driveUcIdMatch[1]}&sz=w1000`;
+            }
+
+            const googleUserContentMatch = raw.match(/googleusercontent\.com\/(?:d\/)?([^/?#&]+)/i);
+            if (googleUserContentMatch && googleUserContentMatch[1]) {
+                return `https://drive.google.com/thumbnail?id=${googleUserContentMatch[1]}&sz=w1000`;
+            }
+
+            return raw;
+        }
+
         async function applyHomeBannerSettings() {
             const line1El = document.getElementById("homeBannerLine1");
             const line2PrefixEl = document.getElementById("homeBannerLine2Prefix");
@@ -1281,8 +1313,49 @@
             }
         }
 
+        async function applyBrandsSettings() {
+            const titleEl = document.getElementById("brandsTitle");
+            const rowEl = document.getElementById("brandsRow");
+            if (!titleEl || !rowEl) return;
+
+            try {
+                const snap = await getDoc(doc(db, "siteSettings", "brands"));
+                if (!snap.exists()) return;
+
+                const data = snap.data() || {};
+                if (typeof data.title === "string" && data.title.trim()) {
+                    titleEl.textContent = data.title.trim();
+                }
+
+                const logos = Array.isArray(data.logos) ? data.logos : [];
+                if (!logos.length) return;
+
+                rowEl.innerHTML = "";
+                logos.forEach((url) => {
+                    const finalUrl = normalizeDriveImageUrl(url);
+                    if (!finalUrl) return;
+
+                    const box = document.createElement("div");
+                    box.className = "brands-box";
+
+                    const img = document.createElement("img");
+                    img.src = finalUrl;
+                    img.alt = "";
+                    img.addEventListener("error", () => {
+                        box.remove();
+                    });
+
+                    box.appendChild(img);
+                    rowEl.appendChild(box);
+                });
+            } catch {
+                // ignore
+            }
+        }
+
         applyHomeBannerSettings();
         applyRecipeVideoSettings();
+        applyBrandsSettings();
     </script>
     <script src="main.js"></script>
 
