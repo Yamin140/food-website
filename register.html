@@ -300,6 +300,7 @@
                 }
 
                 await setDoc(doc(db, "users", cred.user.uid), {
+                    userId: cred.user.uid,
                     name: displayName,
                     email,
                     isAdmin: false,
