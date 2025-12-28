@@ -222,64 +222,7 @@
 
     <script type="module" src="./assets/firebase/ui-auth.js"></script>
 
-    <script type="module">
-        import { auth } from "./assets/firebase/conf.js";
-        import {
-            setPersistence,
-            browserLocalPersistence,
-            browserSessionPersistence,
-            signInWithEmailAndPassword,
-        } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-
-        const form = document.getElementById("loginForm");
-        const emailEl = document.getElementById("loginEmail");
-        const passwordEl = document.getElementById("loginPassword");
-        const togglePasswordBtn = document.getElementById("toggleLoginPassword");
-        const rememberEl = form.querySelector("input[name='remember']");
-        const errorEl = document.getElementById("authError");
-
-        function showError(message) {
-            errorEl.textContent = message;
-            errorEl.classList.remove("d-none");
-        }
-
-        function clearError() {
-            errorEl.textContent = "";
-            errorEl.classList.add("d-none");
-        }
-
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            clearError();
-
-            const email = emailEl.value.trim();
-            const password = passwordEl.value;
-
-            try {
-                const persistence = rememberEl && rememberEl.checked
-                    ? browserLocalPersistence
-                    : browserSessionPersistence;
-
-                await setPersistence(auth, persistence);
-                await signInWithEmailAndPassword(auth, email, password);
-
-                window.location.href = "account.html";
-            } catch (err) {
-                showError(err?.message || "Login failed. Please try again.");
-            }
-        });
-
-        if (togglePasswordBtn) {
-            togglePasswordBtn.addEventListener("click", () => {
-                const isHidden = passwordEl.type === "password";
-                passwordEl.type = isHidden ? "text" : "password";
-
-                const icon = togglePasswordBtn.querySelector("i");
-                if (icon) icon.className = isHidden ? "uil uil-eye-slash" : "uil uil-eye";
-                togglePasswordBtn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
-            });
-        }
-    </script>
+    <script type="module" src="./assets/js/page-login.js"></script>
 </body>
 
 </html>
