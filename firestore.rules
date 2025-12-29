@@ -12,7 +12,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
 
       allow create: if isSignedIn() && request.auth.uid == userId
         && request.resource.data.userId == userId
@@ -53,6 +53,24 @@ service cloud.firestore {
     match /newsletterSubscribers/{subId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
+    }
+
+    match /carts/{userId}/items/{itemId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /orders/{orderId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.status == 'pending' &&
+        request.resource.data.status == 'cancelled_customer' &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'cancelledAt', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
     }
 
     match /{document=**} {

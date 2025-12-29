@@ -119,6 +119,18 @@ const blogPostsBodyEl = document.getElementById("blogPostsBody");
 const newsletterReloadBtn = document.getElementById("newsletterReloadBtn");
 const newsletterSubscribersBodyEl = document.getElementById("newsletterSubscribersBody");
 
+const ordersReloadBtn = document.getElementById("ordersReloadBtn");
+const ordersBodyEl = document.getElementById("ordersBody");
+const orderDetailsTitleEl = document.getElementById("orderDetailsTitle");
+const orderDetailsMetaEl = document.getElementById("orderDetailsMeta");
+const orderDetailsItemsEl = document.getElementById("orderDetailsItems");
+const orderDetailsCancelBtn = document.getElementById("orderDetailsCancelBtn");
+
+const orderCancelOrderIdEl = document.getElementById("orderCancelOrderId");
+const orderCancelReasonEl = document.getElementById("orderCancelReason");
+const orderCancelOkBtn = document.getElementById("orderCancelOkBtn");
+const orderCancelErrorEl = document.getElementById("orderCancelError");
+
 const homeBannerRef = doc(db, "siteSettings", "homeBanner");
 const aboutSectionRef = doc(db, "siteSettings", "aboutSection");
 const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
@@ -131,6 +143,7 @@ const menuItemsCol = collection(db, "menuItems");
 const chefsCol = collection(db, "chefs");
 const blogPostsCol = collection(db, "blogPosts");
 const newsletterSubscribersCol = collection(db, "newsletterSubscribers");
+const ordersCol = collection(db, "orders");
 
 let brandsLogos = [];
 let menuCategories = [];
@@ -139,6 +152,241 @@ let gallerySliderImages = [];
 let chefs = [];
 let blogPosts = [];
 let newsletterSubscribers = [];
+let orders = [];
+
+let activeOrderDetailsId = null;
+
+function escapeInline(input) {
+    return String(input || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function normalizeStatus(status) {
+    return (status || "").toString().trim().toLowerCase();
+}
+
+if (orderCancelOkBtn) {
+    orderCancelOkBtn.addEventListener("click", async () => {
+        clearOrderCancelError();
+        clearError();
+        clearSuccess();
+
+        const orderId = (orderCancelOrderIdEl ? orderCancelOrderIdEl.value : "").toString();
+        const reason = (orderCancelReasonEl ? orderCancelReasonEl.value : "").toString().trim();
+
+        if (!orderId) {
+            setOrderCancelError("Order id missing.");
+            return;
+        }
+        if (!reason) {
+            setOrderCancelError("Cancel reason is required.");
+            return;
+        }
+
+        const o = Array.isArray(orders) ? orders.find((x) => x.id === orderId) : null;
+        if (o && (o.status || "pending") !== "pending") {
+            setOrderCancelError("Only pending orders can be cancelled.");
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, "orders", orderId), {
+                status: "cancelled_restaurant",
+                cancelReason: reason,
+                cancelledAt: Date.now(),
+                updatedAt: Date.now(),
+            });
+            await loadOrders();
+            showSuccess("Order cancelled.");
+        } catch (err) {
+            setOrderCancelError(err?.message || "Failed to cancel order.");
+        }
+    });
+}
+
+function showModalById(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (window.bootstrap && window.bootstrap.Modal) {
+        if (typeof window.bootstrap.Modal.getOrCreateInstance === "function") {
+            window.bootstrap.Modal.getOrCreateInstance(el).show();
+        } else {
+            new window.bootstrap.Modal(el).show();
+        }
+        return;
+    }
+    if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === "function") {
+        window.jQuery(el).modal("show");
+    }
+}
+
+function renderOrdersTable() {
+    if (!ordersBodyEl) return;
+    if (!Array.isArray(orders) || orders.length === 0) {
+        ordersBodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No orders yet.</td></tr>';
+        return;
+    }
+
+    const allowedStatuses = ["pending", "processing", "delivery"];
+    const cancelledStatuses = ["cancelled_customer", "cancelled_restaurant"];
+
+    ordersBodyEl.innerHTML = orders.map((o) => {
+        const email = escapeInline(o.userEmail || o.userId || "");
+        const phone = escapeInline(o.phone || "");
+        const total = Number.isFinite(o.total) ? o.total : (o.total || 0);
+        const rawStatus = normalizeStatus(o.status) || "pending";
+        const isCancelled = cancelledStatuses.includes(rawStatus);
+        const statusValue = allowedStatuses.includes(rawStatus) ? rawStatus : "pending";
+        const statusSelect = `
+            <select class="form-input" data-action="orderStatus" data-id="${escapeInline(o.id)}" style="min-width:140px;" ${isCancelled ? "disabled" : ""}>
+                ${allowedStatuses.map((s) => {
+                    const selected = s === statusValue ? "selected" : "";
+                    return `<option value="${escapeInline(s)}" ${selected}>${escapeInline(s)}</option>`;
+                }).join("")}
+            </select>
+        `;
+
+        let statusCell = statusSelect;
+        if (rawStatus === "cancelled_customer") statusCell = '<span class="text-danger">Cancelled (Customer)</span>';
+        if (rawStatus === "cancelled_restaurant") statusCell = '<span class="text-danger">Cancelled (Restaurant)</span>';
+
+        const actionBtns = [
+            `<button type="button" class="sec-btn" data-action="orderView" data-id="${escapeInline(o.id)}">View</button>`,
+        ];
+        if (rawStatus === "pending") {
+            actionBtns.push(`<button type="button" class="sec-btn" data-action="orderCancel" data-id="${escapeInline(o.id)}">Cancel</button>`);
+        }
+        const ts = typeof o.createdAt === "number" ? o.createdAt : 0;
+        const created = ts ? escapeInline(new Date(ts).toLocaleString()) : "";
+
+        return `
+            <tr>
+                <td style="word-break:break-word;">${email}</td>
+                <td style="word-break:break-word;">${phone}</td>
+                <td>Rs. ${escapeInline(total)}</td>
+                <td>${statusCell}</td>
+                <td style="word-break:break-word;">${created}</td>
+                <td>
+                    <div class="d-flex" style="gap:10px; flex-wrap:wrap;">${actionBtns.join("")}</div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function setOrderCancelError(message) {
+    if (!orderCancelErrorEl) return;
+    orderCancelErrorEl.textContent = message;
+    orderCancelErrorEl.classList.remove("d-none");
+}
+
+function clearOrderCancelError() {
+    if (!orderCancelErrorEl) return;
+    orderCancelErrorEl.textContent = "";
+    orderCancelErrorEl.classList.add("d-none");
+}
+
+function openOrderCancelModal(orderId) {
+    clearOrderCancelError();
+    if (orderCancelOrderIdEl) orderCancelOrderIdEl.value = orderId || "";
+    if (orderCancelReasonEl) orderCancelReasonEl.value = "";
+    showModalById("orderCancelModal");
+}
+
+function getOrderStatusLabel(status) {
+    const s = (status || "pending").toString();
+    if (s === "cancelled_customer") return "Cancelled (Customer)";
+    if (s === "cancelled_restaurant") return "Cancelled (Restaurant)";
+    if (s === "processing") return "Processing";
+    if (s === "delivery") return "Delivery";
+    return "Pending";
+}
+
+function openOrderDetails(order) {
+    if (!order) return;
+    activeOrderDetailsId = order.id || null;
+    if (orderDetailsTitleEl) orderDetailsTitleEl.textContent = "Order Details";
+    const metaParts = [];
+    if (order.name) metaParts.push(`Name: ${order.name}`);
+    if (order.userEmail) metaParts.push(`User: ${order.userEmail}`);
+    if (order.phone) metaParts.push(`Phone: ${order.phone}`);
+    if (order.address) metaParts.push(`Address: ${order.address}`);
+    const normalizedStatus = normalizeStatus(order.status) || "pending";
+    metaParts.push(`Status: ${getOrderStatusLabel(normalizedStatus)}`);
+    if (normalizedStatus === "cancelled_restaurant" && order.cancelReason) metaParts.push(`Cancel Reason: ${order.cancelReason}`);
+    const itemsForTotal = Array.isArray(order.items) ? order.items : [];
+    const computedTotal = itemsForTotal.reduce((sum, it) => {
+        const price = Number(it?.price) || 0;
+        const qty = Number(it?.qty) || 0;
+        return sum + price * qty;
+    }, 0);
+    const orderTotal = Number.isFinite(Number(order.total)) ? Number(order.total) : computedTotal;
+    metaParts.push(`Total: Rs. ${orderTotal}`);
+    if (orderDetailsMetaEl) orderDetailsMetaEl.textContent = metaParts.join(" | ");
+
+    const items = itemsForTotal;
+    if (orderDetailsItemsEl) {
+        if (!items.length) {
+            orderDetailsItemsEl.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No items</td></tr>';
+        } else {
+            const rows = items.map((it) => {
+                const title = escapeInline(it.title || "");
+                const price = Number.isFinite(it.price) ? it.price : (it.price || 0);
+                const qty = Number.isFinite(it.qty) ? it.qty : (it.qty || 0);
+                const subtotal = (Number(price) || 0) * (Number(qty) || 0);
+                return `
+                    <tr>
+                        <td style="word-break:break-word;">${title}</td>
+                        <td>Rs. ${escapeInline(price)}</td>
+                        <td>${escapeInline(qty)}</td>
+                        <td>Rs. ${escapeInline(subtotal)}</td>
+                    </tr>
+                `;
+            }).join("");
+
+            const totalRow = `
+                <tr>
+                    <td colspan="3" class="text-end"><strong>Total</strong></td>
+                    <td><strong>Rs. ${escapeInline(orderTotal)}</strong></td>
+                </tr>
+            `;
+
+            orderDetailsItemsEl.innerHTML = `${rows}${totalRow}`;
+        }
+    }
+
+    showModalById("orderDetailsModal");
+}
+
+if (orderDetailsCancelBtn) {
+    orderDetailsCancelBtn.addEventListener("click", () => {
+        clearError();
+        clearSuccess();
+
+        if (!activeOrderDetailsId) {
+            showError("Order id missing.");
+            return;
+        }
+
+        const o = Array.isArray(orders) ? orders.find((x) => x.id === activeOrderDetailsId) : null;
+        const st = normalizeStatus(o?.status) || "pending";
+        if (st !== "pending") {
+            showError("শুধু pending অর্ডার ক্যানসেল করা যাবে।");
+            return;
+        }
+
+        openOrderCancelModal(activeOrderDetailsId);
+    });
+}
+
+async function loadOrders() {
+    try {
+        const snap = await getDocs(query(ordersCol, orderBy("createdAt", "desc")));
+        orders = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+        renderOrdersTable();
+    } catch {
+        // ignore
+    }
+}
 
 function renderNewsletterSubscribersTable() {
     if (!newsletterSubscribersBodyEl) return;
@@ -1483,6 +1731,71 @@ if (newsletterReloadBtn) {
     });
 }
 
+if (ordersReloadBtn) {
+    ordersReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadOrders();
+        showSuccess("Orders loaded.");
+    });
+}
+
+if (ordersBodyEl) {
+    ordersBodyEl.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.getAttribute("data-action");
+        const id = btn.getAttribute("data-id");
+        if (!action || !id) return;
+
+        const o = Array.isArray(orders) ? orders.find((x) => x.id === id) : null;
+
+        if (action === "orderView") {
+            openOrderDetails(o);
+            return;
+        }
+
+        if (action === "orderCancel") {
+            clearError();
+            clearSuccess();
+            if (!o) return;
+            if ((o.status || "pending") !== "pending") {
+                showError("শুধু pending অর্ডার ক্যানসেল করা যাবে।");
+                return;
+            }
+            openOrderCancelModal(id);
+        }
+    });
+
+    ordersBodyEl.addEventListener("change", async (e) => {
+        const select = e.target.closest("select[data-action='orderStatus']");
+        if (!select) return;
+        const id = select.getAttribute("data-id");
+        const nextStatus = (select.value || "").toString();
+        if (!id) return;
+
+        const allowedStatuses = ["pending", "processing", "delivery"];
+        if (!allowedStatuses.includes(nextStatus)) return;
+
+        clearError();
+        clearSuccess();
+
+        try {
+            await updateDoc(doc(db, "orders", id), {
+                status: nextStatus,
+                updatedAt: Date.now(),
+            });
+            if (Array.isArray(orders)) {
+                const idx = orders.findIndex((x) => x.id === id);
+                if (idx >= 0) orders[idx] = { ...orders[idx], status: nextStatus };
+            }
+            showSuccess("Order status updated.");
+        } catch (err) {
+            showError(err?.message || "Failed to update order status.");
+        }
+    });
+}
+
 if (menuItemsBodyEl) {
     menuItemsBodyEl.addEventListener("click", async (e) => {
         const btn = e.target.closest("button");
@@ -1659,6 +1972,7 @@ onAuthStateChanged(auth, (user) => {
             await loadChefs();
             await loadBlogPosts();
             await loadNewsletterSubscribers();
+            await loadOrders();
             await loadMenuCategories();
             await loadMenuItems();
         } catch {
