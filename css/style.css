@@ -430,6 +430,7 @@ p {
     position: relative;
     z-index: 2;
     padding: 6px 30px;
+    margin: 10px 0 10px 0;
 }
 
 .sec-btn:hover {
@@ -556,7 +557,11 @@ p {
 
 .menu-tab ul {
     padding: 10px;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 6px;
     border-radius: 60px;
     background: linear-gradient(145deg, #ececec, #ffffff);
     box-shadow: 28px 28px 55px #d4d4d4, -28px -28px 55px #ffffff;
@@ -575,20 +580,25 @@ p {
     transition: 0.3s;
     justify-content: center;
     align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
 }
 
 .filter-active {
     position: absolute;
     left: 0;
-    top: 12px;
-    min-height: 50px;
+    top: 10px;
+    min-height: 46px;
     z-index: -1;
 }
 
 .menu-tab ul li img {
-    margin-right: 10px;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    margin-right: 0;
     position: relative;
-    top: 1px;
+    top: 0;
 }
 
 .menu-tab ul .filter-active {
@@ -596,22 +606,38 @@ p {
     background: linear-gradient(145deg, #e3a92b, #ffc933);
 }
 
+@media (max-width: 768px) {
+    .menu-tab ul {
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
 .menu-list-row .bydefault_show .dish-box-wp {
-    display: inline-block !important;
+    display: flex !important;
+    flex-direction: column;
+    margin-top: 130px;
+    background: red;
 }
 
 .dish-box-wp {
     display: none;
+    flex-direction: column;
 }
 
 .dish-box {
     border-radius: 30px;
     background: linear-gradient(145deg, #ececec, #ffffff);
     box-shadow: 28px 28px 45px #d4d4d4, -28px -28px 45px #ffffff;
-    display: flow-root;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     padding: 0 30px 40px;
     padding-top: 0;
-    margin: 130px 0 30px;
+    /* margin: 130px 0 30px; */
+    margin: 0px 0 30px;
     transition: 0.8s cubic-bezier(0.22, 0.78, 0.45, 1.02);
 }
 
@@ -622,12 +648,17 @@ p {
 .dist-img {
     margin-top: -130px;
     margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
 }
 
 .dist-img img {
     box-shadow: 28px 28px 45px #d4d4d4, -28px -28px 45px #ffffff;
     border-radius: 50%;
     overflow: hidden;
+    width: 220px;
+    height: 220px;
+    object-fit: cover;
 }
 
 .dish-rating {
@@ -656,6 +687,10 @@ p {
 
 .dish-title p {
     color: #bfbfbf;
+}
+
+.dish-title p:empty {
+    display: none;
 }
 
 .dish-info ul, .dist-bottom-row ul {
@@ -697,6 +732,10 @@ p {
     border-bottom: 2px solid rgb(204 204 204 / 30%);
     margin: 30px 0 30px;
     padding-bottom: 30px;
+}
+
+.dist-bottom-row {
+    margin-top: 30px;
 }
 
 .dist-bottom-row ul li {

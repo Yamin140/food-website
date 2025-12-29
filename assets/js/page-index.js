@@ -1,5 +1,12 @@
 import { db } from "../firebase/conf.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    orderBy,
+    query,
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 function normalizeRecipeVideoUrl(inputUrl) {
     const raw = (inputUrl || "").trim();
@@ -48,6 +55,148 @@ function normalizeDriveImageUrl(inputUrl) {
     }
 
     return raw;
+}
+
+function escapeHtml(input) {
+    return String(input || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function applyMenuSettings() {
+    const menuSectionEl = document.getElementById("menu");
+    const filtersEl = document.querySelector(".menu-tab .filters");
+    const dishRowEl = document.getElementById("menu-dish");
+
+    if (!filtersEl || !dishRowEl) return;
+
+    try {
+        const categoriesSnap = await getDocs(query(collection(db, "menuCategories"), orderBy("order", "asc")));
+        const categories = categoriesSnap.docs
+            .map((d) => ({ id: d.id, ...(d.data() || {}) }))
+            .filter((c) => c && c.active && typeof c.slug === "string" && c.slug.trim() && typeof c.name === "string" && c.name.trim());
+
+        const itemsSnap = await getDocs(query(collection(db, "menuItems"), orderBy("createdAt", "desc")));
+        const items = itemsSnap.docs
+            .map((d) => ({ id: d.id, ...(d.data() || {}) }))
+            .filter((it) => it && it.active !== false);
+
+        const hasMenuData = categories.length > 0 && items.length > 0;
+        if (!hasMenuData) {
+            if (menuSectionEl) menuSectionEl.style.display = "none";
+            filtersEl.innerHTML = "";
+            dishRowEl.innerHTML = "";
+            return;
+        }
+
+        if (menuSectionEl) menuSectionEl.style.display = "";
+
+        const iconFallbacks = [
+            "assets/images/menu-1.png",
+            "assets/images/menu-2.png",
+            "assets/images/menu-3.png",
+            "assets/images/menu-4.png",
+        ];
+
+        const allFilter = ".all";
+
+        filtersEl.innerHTML = [
+            '<div class="filter-active"></div>',
+            `
+                <li class="filter" data-filter="${allFilter}">
+                    All
+                </li>
+            `,
+            ...categories.map((c, idx) => {
+                const icon = typeof c.imageUrl === "string" && c.imageUrl.trim()
+                    ? normalizeDriveImageUrl(c.imageUrl)
+                    : null;
+                const iconHtml = icon
+                    ? `<img src="${icon}" alt="not found">`
+                    : "";
+                return `
+                    <li class="filter" data-filter=".${escapeHtml(c.slug)}">
+                        ${iconHtml}
+                        ${escapeHtml(c.name)}
+                    </li>
+                `;
+            }),
+        ].join("");
+
+        dishRowEl.innerHTML = items.map((it) => {
+                const title = escapeHtml(it.title);
+                const calories = escapeHtml(it.calories);
+                const type = escapeHtml(it.type);
+                const description = escapeHtml(it.description);
+
+                const rating = Number.isFinite(it.rating) ? it.rating : (it.rating || "");
+                const persons = Number.isFinite(it.persons) ? it.persons : (it.persons || "");
+                const price = Number.isFinite(it.price) ? it.price : (it.price || "");
+
+                const image = typeof it.imageUrl === "string" ? normalizeDriveImageUrl(it.imageUrl) : null;
+                const cats = Array.isArray(it.categories) ? it.categories.filter((x) => typeof x === "string" && x.trim()) : [];
+                const catClasses = cats.map((s) => escapeHtml(s)).join(" ");
+
+                return `
+                    <div class="col-lg-4 col-sm-6 dish-box-wp all ${catClasses}" data-cat="${escapeHtml(cats[0] || "all")}">
+                        <div class="dish-box text-center">
+                            <div class="dist-img">
+                                <img src="${image || "assets/images/dish/1.png"}" alt="not found">
+                            </div>
+                            <div class="dish-rating">
+                                ${escapeHtml(rating)}
+                                <i class="uil uil-star"></i>
+                            </div>
+                            <div class="dish-title">
+                                <h3 class="h3-title">${title}</h3>
+                                <p>${calories}</p>
+                            </div>
+                            <div class="dish-info">
+                                <ul>
+                                    <li>
+                                        <p>Type</p>
+                                        <b>${type}</b>
+                                    </li>
+                                    <li>
+                                        <p>Persons</p>
+                                        <b>${escapeHtml(persons)}</b>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="dist-bottom-row">
+                                <ul>
+                                    <li>
+                                        <b>Rs. ${escapeHtml(price)}</b>
+                                    </li>
+                                    <li>
+                                        <button class="dish-add-btn" type="button" title="${description}">
+                                            <i class="uil uil-plus"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+
+        if (typeof window.__initMenuFiltering === "function") {
+            window.__initMenuFiltering();
+        } else {
+            window.__menuInitPending = true;
+        }
+
+        if (typeof window.__setupMenuFilterActiveBar === "function") {
+            window.__setupMenuFilterActiveBar();
+        } else {
+            window.__menuBarInitPending = true;
+        }
+    } catch {
+        if (menuSectionEl) menuSectionEl.style.display = "none";
+    }
 }
 
 async function applyHomeBannerSettings() {
@@ -219,3 +368,4 @@ applyAboutSectionSettings().then((res) => {
     }
 });
 applyBrandsSettings();
+applyMenuSettings();

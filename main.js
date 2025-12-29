@@ -67,26 +67,41 @@ $(document).ready(function ($) {
     jQuery(".filters").on("click", function () {
         jQuery("#menu-dish").removeClass("bydefault_show");
     });
-    $(function () {
-        var filterList = {
-            init: function () {
-                $("#menu-dish").mixItUp({
-                    selectors: {
-                        target: ".dish-box-wp",
-                        filter: ".filter",
-                    },
-                    animation: {
-                        effects: "fade",
-                        easing: "ease-in-out",
-                    },
-                    load: {
-                        filter: ".all, .breakfast, .lunch, .dinner",
-                    },
-                });
+
+    function initMenuFiltering() {
+        if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.mixItUp !== "function") return;
+        var $container = jQuery("#menu-dish");
+        if (!$container.length) return;
+
+        try {
+            $container.mixItUp("destroy");
+        } catch (e) {
+            // ignore
+        }
+
+        $container.mixItUp({
+            selectors: {
+                target: ".dish-box-wp",
+                filter: ".filter",
             },
-        };
-        filterList.init();
-    });
+            animation: {
+                effects: "fade",
+                easing: "ease-in-out",
+            },
+            load: {
+                filter: ".all",
+            },
+        });
+    }
+
+    window.__initMenuFiltering = initMenuFiltering;
+
+    if (window.__menuInitPending) {
+        initMenuFiltering();
+        window.__menuInitPending = false;
+    } else {
+        initMenuFiltering();
+    }
 
     jQuery(".menu-toggle").click(function () {
         jQuery(".main-navigation").toggleClass("toggled");
@@ -114,59 +129,70 @@ $(document).ready(function ($) {
 
     var scene = $(".js-parallax-scene").get(0);
     var parallaxInstance = new Parallax(scene);
-
-
 });
-
 
 jQuery(window).on('load', function () {
     $('body').removeClass('body-fixed');
 
-    //activating tab of filter
-    let targets = document.querySelectorAll(".filter");
-    let activeTab = 0;
-    let old = 0;
-    let dur = 0.4;
-    let animation;
+    function setupMenuFilterActiveBar() {
+        // activating tab of filter (works with dynamic filters)
+        let targets = document.querySelectorAll(".filter");
+        if (!targets || !targets.length) return;
 
-    for (let i = 0; i < targets.length; i++) {
-        targets[i].index = i;
-        targets[i].addEventListener("click", moveBar);
-    }
+        let activeTab = 0;
+        let old = 0;
+        let animation;
 
-    // initial position on first === All 
-    gsap.set(".filter-active", {
-        x: targets[0].offsetLeft,
-        width: targets[0].offsetWidth
-    });
-
-    function moveBar() {
-        if (this.index != activeTab) {
-            if (animation && animation.isActive()) {
-                animation.progress(1);
-            }
-            animation = gsap.timeline({
-                defaults: {
-                    duration: 0.4
-                }
-            });
-            old = activeTab;
-            activeTab = this.index;
-            animation.to(".filter-active", {
-                x: targets[activeTab].offsetLeft,
-                width: targets[activeTab].offsetWidth
-            });
-
-            animation.to(targets[old], {
-                color: "#0d0d25",
-                ease: "none"
-            }, 0);
-            animation.to(targets[activeTab], {
-                color: "#fff",
-                ease: "none"
-            }, 0);
-
+        for (let i = 0; i < targets.length; i++) {
+            if (targets[i].dataset && targets[i].dataset.menuBarBound === "1") continue;
+            targets[i].dataset.menuBarBound = "1";
+            targets[i].index = i;
+            targets[i].addEventListener("click", moveBar);
         }
 
+        // initial position on first === All
+        if (window.gsap) {
+            gsap.set(".filter-active", {
+                x: targets[0].offsetLeft,
+                width: targets[0].offsetWidth
+            });
+        }
+
+        function moveBar() {
+            if (this.index != activeTab) {
+                if (animation && animation.isActive()) {
+                    animation.progress(1);
+                }
+                animation = gsap.timeline({
+                    defaults: {
+                        duration: 0.4
+                    }
+                });
+                old = activeTab;
+                activeTab = this.index;
+                animation.to(".filter-active", {
+                    x: targets[activeTab].offsetLeft,
+                    width: targets[activeTab].offsetWidth
+                });
+
+                animation.to(targets[old], {
+                    color: "#0d0d25",
+                    ease: "none"
+                }, 0);
+                animation.to(targets[activeTab], {
+                    color: "#fff",
+                    ease: "none"
+                }, 0);
+
+            }
+        }
+    }
+
+    window.__setupMenuFilterActiveBar = setupMenuFilterActiveBar;
+    setupMenuFilterActiveBar();
+
+    if (window.__menuBarInitPending) {
+        setupMenuFilterActiveBar();
+        window.__menuBarInitPending = false;
     }
 });

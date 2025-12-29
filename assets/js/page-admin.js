@@ -1,9 +1,16 @@
 import { auth, db } from "../firebase/conf.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 import {
+    addDoc,
+    collection,
+    deleteDoc,
     getDoc,
+    getDocs,
+    orderBy,
+    query,
     setDoc,
     doc,
+    updateDoc,
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 const adminUserEl = document.getElementById("adminUser");
@@ -40,12 +47,52 @@ const brandAddLogoBtn = document.getElementById("brandAddLogoBtn");
 const brandsBodyEl = document.getElementById("brandsBody");
 const brandsReloadBtn = document.getElementById("brandsReloadBtn");
 
+const menuCategoryForm = document.getElementById("menuCategoryForm");
+const menuCategoryIdEl = document.getElementById("menuCategoryId");
+const menuCategoryNameEl = document.getElementById("menuCategoryName");
+const menuCategoryImageUrlEl = document.getElementById("menuCategoryImageUrl");
+const menuCategoryActiveEl = document.getElementById("menuCategoryActive");
+const menuCategoryResetBtn = document.getElementById("menuCategoryResetBtn");
+const menuCategoryReloadBtn = document.getElementById("menuCategoryReloadBtn");
+const menuCategoriesBodyEl = document.getElementById("menuCategoriesBody");
+
+const menuItemForm = document.getElementById("menuItemForm");
+const menuItemIdEl = document.getElementById("menuItemId");
+const menuItemTitleEl = document.getElementById("menuItemTitle");
+const menuItemPriceEl = document.getElementById("menuItemPrice");
+const menuItemRatingEl = document.getElementById("menuItemRating");
+const menuItemCaloriesEl = document.getElementById("menuItemCalories");
+const menuItemTypeEl = document.getElementById("menuItemType");
+const menuItemPersonsEl = document.getElementById("menuItemPersons");
+const menuItemImageUrlEl = document.getElementById("menuItemImageUrl");
+const menuItemCategoriesEl = document.getElementById("menuItemCategories");
+const menuItemDescriptionEl = document.getElementById("menuItemDescription");
+const menuItemActiveEl = document.getElementById("menuItemActive");
+const menuItemResetBtn = document.getElementById("menuItemResetBtn");
+const menuItemReloadBtn = document.getElementById("menuItemReloadBtn");
+const menuItemsBodyEl = document.getElementById("menuItemsBody");
+
 const homeBannerRef = doc(db, "siteSettings", "homeBanner");
 const aboutSectionRef = doc(db, "siteSettings", "aboutSection");
 const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
 const brandsRef = doc(db, "siteSettings", "brands");
 
+const menuCategoriesCol = collection(db, "menuCategories");
+const menuItemsCol = collection(db, "menuItems");
+
 let brandsLogos = [];
+let menuCategories = [];
+let menuItems = [];
+
+function slugify(input) {
+    return (input || "")
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/['"`]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
 
 function normalizeDriveImageUrl(inputUrl) {
     const raw = (inputUrl || "").trim();
@@ -193,6 +240,276 @@ async function loadBrandsSettings() {
     }
 }
 
+function resetMenuCategoryForm() {
+    if (menuCategoryIdEl) menuCategoryIdEl.value = "";
+    if (menuCategoryNameEl) menuCategoryNameEl.value = "";
+    if (menuCategoryImageUrlEl) menuCategoryImageUrlEl.value = "";
+    if (menuCategoryActiveEl) menuCategoryActiveEl.value = "true";
+}
+
+function renderMenuCategories() {
+    if (!menuCategoriesBodyEl) return;
+
+    if (!Array.isArray(menuCategories) || menuCategories.length === 0) {
+        menuCategoriesBodyEl.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No categories yet.</td></tr>';
+        return;
+    }
+
+    menuCategoriesBodyEl.innerHTML = menuCategories.map((c, idx) => {
+        const safeName = (c.name || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const activeText = c.active ? "Yes" : "No";
+
+        return `
+            <tr>
+                <td>${idx + 1}</td>
+                <td style="word-break:break-word;">${safeName}</td>
+                <td>${activeText}</td>
+                <td>
+                    <div class="d-flex" style="gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="sec-btn" data-action="catUp" data-id="${c.id}" ${idx === 0 ? "disabled" : ""}>Up</button>
+                        <button type="button" class="sec-btn" data-action="catDown" data-id="${c.id}" ${idx === menuCategories.length - 1 ? "disabled" : ""}>Down</button>
+                        <button type="button" class="sec-btn" data-action="catEdit" data-id="${c.id}">Edit</button>
+                        <button type="button" class="sec-btn" data-action="catDelete" data-id="${c.id}">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function renderMenuItemCategoryOptions(selectedSlugs = []) {
+    if (!menuItemCategoriesEl) return;
+
+    const activeCategories = Array.isArray(menuCategories)
+        ? menuCategories.filter((c) => c && c.active && typeof c.slug === "string" && c.slug.trim())
+        : [];
+
+    if (activeCategories.length === 0) {
+        menuItemCategoriesEl.innerHTML = '<span class="text-muted">No categories yet.</span>';
+        return;
+    }
+
+    const selectedSet = new Set(Array.isArray(selectedSlugs) ? selectedSlugs : []);
+
+    menuItemCategoriesEl.innerHTML = activeCategories.map((c) => {
+        const id = `cat_${c.id}`;
+        const checked = selectedSet.has(c.slug) ? "checked" : "";
+        const safeName = (c.name || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return `
+            <label for="${id}" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="${id}" data-cat-slug="${c.slug}" ${checked}>
+                <span>${safeName}</span>
+            </label>
+        `;
+    }).join("");
+}
+
+function getSelectedMenuItemCategorySlugs() {
+    if (!menuItemCategoriesEl) return [];
+    const inputs = Array.from(menuItemCategoriesEl.querySelectorAll('input[type="checkbox"][data-cat-slug]'));
+    return inputs
+        .filter((i) => i.checked)
+        .map((i) => i.getAttribute("data-cat-slug"))
+        .filter((x) => typeof x === "string" && x.trim());
+}
+
+async function loadMenuCategories() {
+    try {
+        const q = query(menuCategoriesCol, orderBy("order", "asc"));
+        const snap = await getDocs(q);
+        menuCategories = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+        renderMenuCategories();
+        renderMenuItemCategoryOptions(getSelectedMenuItemCategorySlugs());
+    } catch (err) {
+        showError(err?.message || "Failed to load menu categories.");
+    }
+}
+
+function resetMenuItemForm() {
+    if (menuItemIdEl) menuItemIdEl.value = "";
+    if (menuItemTitleEl) menuItemTitleEl.value = "";
+    if (menuItemPriceEl) menuItemPriceEl.value = "";
+    if (menuItemRatingEl) menuItemRatingEl.value = "";
+    if (menuItemCaloriesEl) menuItemCaloriesEl.value = "";
+    if (menuItemTypeEl) menuItemTypeEl.value = "";
+    if (menuItemPersonsEl) menuItemPersonsEl.value = "";
+    if (menuItemImageUrlEl) menuItemImageUrlEl.value = "";
+    if (menuItemDescriptionEl) menuItemDescriptionEl.value = "";
+    if (menuItemActiveEl) menuItemActiveEl.value = "true";
+    renderMenuItemCategoryOptions([]);
+}
+
+function renderMenuItems() {
+    if (!menuItemsBodyEl) return;
+
+    if (!Array.isArray(menuItems) || menuItems.length === 0) {
+        menuItemsBodyEl.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No menu items yet.</td></tr>';
+        return;
+    }
+
+    menuItemsBodyEl.innerHTML = menuItems.map((it) => {
+        const safeTitle = (it.title || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const price = Number.isFinite(it.price) ? it.price : (typeof it.price === "string" ? it.price : "");
+        const activeText = it.active ? "Yes" : "No";
+
+        return `
+            <tr>
+                <td style="word-break:break-word;">${safeTitle}</td>
+                <td>${price}</td>
+                <td>${activeText}</td>
+                <td>
+                    <div class="d-flex" style="gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="sec-btn" data-action="itemEdit" data-id="${it.id}">Edit</button>
+                        <button type="button" class="sec-btn" data-action="itemDelete" data-id="${it.id}">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+async function loadMenuItems() {
+    try {
+        const q = query(menuItemsCol, orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        menuItems = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+        renderMenuItems();
+    } catch (err) {
+        showError(err?.message || "Failed to load menu items.");
+    }
+}
+
+async function saveMenuItem() {
+    const id = menuItemIdEl ? menuItemIdEl.value.trim() : "";
+    const title = menuItemTitleEl ? menuItemTitleEl.value.trim() : "";
+    const imageUrl = menuItemImageUrlEl ? menuItemImageUrlEl.value.trim() : "";
+    const categories = getSelectedMenuItemCategorySlugs();
+    const active = menuItemActiveEl ? menuItemActiveEl.value === "true" : true;
+
+    const priceRaw = menuItemPriceEl ? menuItemPriceEl.value : "";
+    const price = priceRaw === "" ? null : Number(priceRaw);
+    const ratingRaw = menuItemRatingEl ? menuItemRatingEl.value : "";
+    const rating = ratingRaw === "" ? null : Number(ratingRaw);
+    const personsRaw = menuItemPersonsEl ? menuItemPersonsEl.value : "";
+    const persons = personsRaw === "" ? null : Number(personsRaw);
+
+    const calories = menuItemCaloriesEl ? menuItemCaloriesEl.value.trim() : "";
+    const type = menuItemTypeEl ? menuItemTypeEl.value : "";
+    const description = menuItemDescriptionEl ? menuItemDescriptionEl.value.trim() : "";
+
+    if (!title) {
+        showError("Item title is required.");
+        return;
+    }
+
+    if (price === null || Number.isNaN(price)) {
+        showError("Valid price is required.");
+        return;
+    }
+
+    if (!imageUrl) {
+        showError("Image URL is required.");
+        return;
+    }
+
+    if (!categories.length) {
+        showError("Select at least one category.");
+        return;
+    }
+
+    const payload = {
+        title,
+        price,
+        imageUrl,
+        categories,
+        rating: rating === null || Number.isNaN(rating) ? null : rating,
+        calories,
+        type,
+        persons: persons === null || Number.isNaN(persons) ? null : persons,
+        description,
+        active,
+        updatedAt: Date.now(),
+    };
+
+    if (id) {
+        await updateDoc(doc(db, "menuItems", id), payload);
+        showSuccess("Item updated.");
+        return;
+    }
+
+    await addDoc(menuItemsCol, {
+        ...payload,
+        createdAt: Date.now(),
+    });
+    showSuccess("Item added.");
+}
+
+async function deleteMenuItemById(id) {
+    await deleteDoc(doc(db, "menuItems", id));
+    showSuccess("Item deleted.");
+}
+
+async function saveMenuCategory() {
+    const name = menuCategoryNameEl ? menuCategoryNameEl.value.trim() : "";
+    const imageUrl = menuCategoryImageUrlEl ? menuCategoryImageUrlEl.value.trim() : "";
+    const active = menuCategoryActiveEl ? menuCategoryActiveEl.value === "true" : true;
+    const id = menuCategoryIdEl ? menuCategoryIdEl.value.trim() : "";
+
+    if (!name) {
+        showError("Category name is required.");
+        return;
+    }
+
+    if (id) {
+        await updateDoc(doc(db, "menuCategories", id), {
+            name,
+            imageUrl: imageUrl || "",
+            active,
+            updatedAt: Date.now(),
+        });
+        showSuccess("Category updated.");
+        return;
+    }
+
+    const maxOrder = menuCategories.reduce((m, c) => Math.max(m, Number.isFinite(c.order) ? c.order : 0), 0);
+    const slug = slugify(name) || `cat-${Date.now()}`;
+
+    await addDoc(menuCategoriesCol, {
+        name,
+        slug,
+        imageUrl: imageUrl || "",
+        active,
+        order: maxOrder + 1,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+    });
+    showSuccess("Category added.");
+}
+
+async function deleteMenuCategoryById(id) {
+    await deleteDoc(doc(db, "menuCategories", id));
+    showSuccess("Category deleted.");
+}
+
+async function moveMenuCategory(id, dir) {
+    const idx = menuCategories.findIndex((c) => c.id === id);
+    if (idx < 0) return;
+    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= menuCategories.length) return;
+
+    const a = menuCategories[idx];
+    const b = menuCategories[swapIdx];
+
+    const aOrder = Number.isFinite(a.order) ? a.order : idx + 1;
+    const bOrder = Number.isFinite(b.order) ? b.order : swapIdx + 1;
+
+    await Promise.all([
+        updateDoc(doc(db, "menuCategories", a.id), { order: bOrder, updatedAt: Date.now() }),
+        updateDoc(doc(db, "menuCategories", b.id), { order: aOrder, updatedAt: Date.now() }),
+    ]);
+    showSuccess("Category order updated.");
+}
+
 if (hbForm) {
     hbForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -301,6 +618,158 @@ if (brandsReloadBtn) {
     });
 }
 
+if (menuCategoryForm) {
+    menuCategoryForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+
+        try {
+            await saveMenuCategory();
+            resetMenuCategoryForm();
+            await loadMenuCategories();
+        } catch (err) {
+            showError(err?.message || "Failed to save category.");
+        }
+    });
+}
+
+if (menuCategoryResetBtn) {
+    menuCategoryResetBtn.addEventListener("click", () => {
+        clearError();
+        clearSuccess();
+        resetMenuCategoryForm();
+    });
+}
+
+if (menuCategoryReloadBtn) {
+    menuCategoryReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadMenuCategories();
+        showSuccess("Categories loaded.");
+    });
+}
+
+if (menuItemForm) {
+    menuItemForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+
+        try {
+            await saveMenuItem();
+            resetMenuItemForm();
+            await loadMenuItems();
+        } catch (err) {
+            showError(err?.message || "Failed to save item.");
+        }
+    });
+}
+
+if (menuItemResetBtn) {
+    menuItemResetBtn.addEventListener("click", () => {
+        clearError();
+        clearSuccess();
+        resetMenuItemForm();
+    });
+}
+
+if (menuItemReloadBtn) {
+    menuItemReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadMenuItems();
+        showSuccess("Items loaded.");
+    });
+}
+
+if (menuItemsBodyEl) {
+    menuItemsBodyEl.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.getAttribute("data-action");
+        const id = btn.getAttribute("data-id");
+        if (!action || !id) return;
+
+        clearError();
+        clearSuccess();
+
+        try {
+            if (action === "itemEdit") {
+                const it = menuItems.find((x) => x.id === id);
+                if (!it) return;
+
+                if (menuItemIdEl) menuItemIdEl.value = it.id;
+                if (menuItemTitleEl) menuItemTitleEl.value = it.title || "";
+                if (menuItemPriceEl) menuItemPriceEl.value = Number.isFinite(it.price) ? String(it.price) : (it.price || "");
+                if (menuItemRatingEl) menuItemRatingEl.value = Number.isFinite(it.rating) ? String(it.rating) : (it.rating || "");
+                if (menuItemCaloriesEl) menuItemCaloriesEl.value = it.calories || "";
+                if (menuItemTypeEl) menuItemTypeEl.value = it.type || "";
+                if (menuItemPersonsEl) menuItemPersonsEl.value = Number.isFinite(it.persons) ? String(it.persons) : (it.persons || "");
+                if (menuItemImageUrlEl) menuItemImageUrlEl.value = it.imageUrl || "";
+                if (menuItemDescriptionEl) menuItemDescriptionEl.value = it.description || "";
+                if (menuItemActiveEl) menuItemActiveEl.value = it.active ? "true" : "false";
+                renderMenuItemCategoryOptions(Array.isArray(it.categories) ? it.categories : []);
+                return;
+            }
+
+            if (action === "itemDelete") {
+                await deleteMenuItemById(id);
+                resetMenuItemForm();
+                await loadMenuItems();
+            }
+        } catch (err) {
+            showError(err?.message || "Item action failed.");
+        }
+    });
+}
+
+if (menuCategoriesBodyEl) {
+    menuCategoriesBodyEl.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.getAttribute("data-action");
+        const id = btn.getAttribute("data-id");
+        if (!action || !id) return;
+
+        clearError();
+        clearSuccess();
+
+        try {
+            if (action === "catEdit") {
+                const c = menuCategories.find((x) => x.id === id);
+                if (!c) return;
+                if (menuCategoryIdEl) menuCategoryIdEl.value = c.id;
+                if (menuCategoryNameEl) menuCategoryNameEl.value = c.name || "";
+                if (menuCategoryImageUrlEl) menuCategoryImageUrlEl.value = c.imageUrl || "";
+                if (menuCategoryActiveEl) menuCategoryActiveEl.value = c.active ? "true" : "false";
+                return;
+            }
+
+            if (action === "catDelete") {
+                await deleteMenuCategoryById(id);
+                resetMenuCategoryForm();
+                await loadMenuCategories();
+                return;
+            }
+
+            if (action === "catUp") {
+                await moveMenuCategory(id, "up");
+                await loadMenuCategories();
+                return;
+            }
+
+            if (action === "catDown") {
+                await moveMenuCategory(id, "down");
+                await loadMenuCategories();
+            }
+        } catch (err) {
+            showError(err?.message || "Category action failed.");
+        }
+    });
+}
+
 if (hbReloadBtn) {
     hbReloadBtn.addEventListener("click", async () => {
         clearError();
@@ -350,6 +819,8 @@ onAuthStateChanged(auth, (user) => {
             await loadHomeBannerSettings();
             await loadAboutSectionSettings();
             await loadBrandsSettings();
+            await loadMenuCategories();
+            await loadMenuItems();
         } catch {
             window.location.href = "account.html";
         }
