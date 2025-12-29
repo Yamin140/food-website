@@ -10,28 +10,28 @@
   // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 
   //Yamin firebase config
-  // const firebaseConfig = {
-  //   apiKey: "AIzaSyATkMIUEvzyPi-4-797-SeaI-wWkdzJ66w",
-  //   authDomain: "food-website-8cb08.firebaseapp.com",
-  //   projectId: "food-website-8cb08",
-  //   storageBucket: "food-website-8cb08.firebasestorage.app",
-  //   messagingSenderId: "152139970054",
-  //   appId: "1:152139970054:web:47b31344cf63830f417587",
-  //   measurementId: "G-856YRNPSM2"
-  // };
+  const firebaseConfig = {
+    apiKey: "AIzaSyATkMIUEvzyPi-4-797-SeaI-wWkdzJ66w",
+    authDomain: "food-website-8cb08.firebaseapp.com",
+    projectId: "food-website-8cb08",
+    storageBucket: "food-website-8cb08.firebasestorage.app",
+    messagingSenderId: "152139970054",
+    appId: "1:152139970054:web:47b31344cf63830f417587",
+    measurementId: "G-856YRNPSM2"
+  };
 
 
 
   //webdesignanddevelopment648@gmail.com (Md Akash firebase config - food website)
-  const firebaseConfig = {
-  apiKey: "AIzaSyCmluINGz4gqaiapBzycdK3EtYKnj8PXcY",
-  authDomain: "food-website-4acb9.firebaseapp.com",
-  projectId: "food-website-4acb9",
-  storageBucket: "food-website-4acb9.firebasestorage.app",
-  messagingSenderId: "603053394148",
-  appId: "1:603053394148:web:e4413339e23857bd8684f1",
-  measurementId: "G-HLMSPY86CX"
-};
+  // const firebaseConfig = {
+  // apiKey: "AIzaSyCmluINGz4gqaiapBzycdK3EtYKnj8PXcY",
+  // authDomain: "food-website-4acb9.firebaseapp.com",
+  // projectId: "food-website-4acb9",
+  // storageBucket: "food-website-4acb9.firebasestorage.app",
+  // messagingSenderId: "603053394148",
+  // appId: "1:603053394148:web:e4413339e23857bd8684f1",
+  // measurementId: "G-HLMSPY86CX"
+  // };
 
   // Initialize Firebase
   export const app = initializeApp(firebaseConfig);
