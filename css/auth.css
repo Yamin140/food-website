@@ -102,6 +102,14 @@
      border-radius:16px;
      background:#f3f3f5;
      box-shadow:inset 9px 9px 12px #e4e4e4,inset -9px -9px 12px #ffffff;
+     max-height:calc(100vh - 130px);
+     overflow-y:auto;
+     align-self:flex-start;
+ }
+
+ .admin-sidebar.admin-sidebar-fixed{
+     position:fixed;
+     z-index:1000;
  }
 
  .admin-sidebar-title{
@@ -150,11 +158,28 @@
 
  .admin-section{
      scroll-margin-top:130px;
+     margin-bottom:18px;
+ }
+
+ .admin-section > .col-lg-12{
+     background:#ffffff;
+     border:1px solid #e2e2e2;
+     border-radius:16px;
+     padding:22px;
+     box-shadow:0 10px 24px rgba(13,13,37,.08);
+ }
+
+ .admin-section > .col-lg-12 .h3-title{
+     margin-top:0;
  }
 
  @media (max-width: 991px){
      .admin-sidebar{
-         position:static;
+         top:90px;
+     }
+
+     .admin-section > .col-lg-12{
+         padding:16px;
      }
 
      .admin-nav{

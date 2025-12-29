@@ -20,61 +20,9 @@
 </head>
 
 <body>
-    <header class="site-header sticky_head">
-        <div class="container">
-            <div class="wrapper">
-                <div class="logo-section">
-                    <div class="header-logo">
-                        <a href="index.html">
-                            <img src="logo.png" width="160" height="36" alt="Logo">
-                        </a>
-                    </div>
-                </div>
-                <div class="nav-wrapper">
-                    <div class="main-navigation">
-                        <nav class="header-menu">
-                            <ul class="menu food-nav-menu">
-                                <li><a href="index.html#home">Home</a></li>
-                                <li><a href="index.html#about">About</a></li>
-                                <li><a href="index.html#menu">Menu</a></li>
-                                <li><a href="index.html#gallery">Gallery</a></li>
-                                <li><a href="index.html#blog">Blog</a></li>
-                                <li><a href="index.html#contact">Contact</a></li>
-                            </ul>
-                        </nav>
+    
 
-                        <div class="header-search">
-                            <form action="#" class="header-search-form for-des">
-                                <input type="search" class="form-input" placeholder="Search Here...">
-                                <button type="submit">
-                                    <i class="uil uil-search"></i>
-                                </button>
-                            </form>
-
-                            <a href="javascript:void(0)" class="header-btn header-cart">
-                                <i class="uil uil-shopping-bag"></i>
-                                <span class="cart-number">3</span>
-                            </a>
-
-                            <a href="login.html" id="headerLoginBtn" class="header-btn" aria-label="Login">
-                                <i class="uil uil-user-md"></i>
-                            </a>
-
-                            <a href="account.html" id="headerAccountBtn" class="header-btn d-none" aria-label="Account">
-                                <i class="uil uil-user"></i>
-                            </a>
-
-                            <a href="#" id="headerLogoutBtn" class="header-btn d-none" aria-label="Logout">
-                                <i class="uil uil-signout"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <main class="auth-page admin-page">
+    <main class="auth-page admin-page" style="padding: 0;">
         <div class="row justify-content-center">
             <div class="col-lg-11">
                 <div class="auth-card">
@@ -118,6 +66,8 @@
                                             Categories</span></a>
                                     <a class="admin-nav-link" href="#adminMenuItems" data-target="adminMenuItems"><i
                                             class="uil uil-utensils"></i><span>Menu Items</span></a>
+                                    <a class="admin-nav-link" href="#adminBlogPosts" data-target="adminBlogPosts"><i
+                                            class="uil uil-notes"></i><span>Blog Posts</span></a>
                                 </nav>
 
                             </div>
@@ -508,6 +458,86 @@
 
                             <div class="auth-divider"></div>
 
+                            <div class="row admin-section" id="adminBlogPosts">
+                                <div class="col-lg-12">
+                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Blog Posts</h3>
+
+                                    <form id="blogPostForm" action="#" method="get">
+                                        <input type="hidden" id="blogPostId" value="">
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="blogPostTitle">Title</label>
+                                                <input class="form-input" type="text" id="blogPostTitle"
+                                                    placeholder="Post title" required>
+                                            </div>
+
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="blogPostDate">Date</label>
+                                                <input class="form-input" type="text" id="blogPostDate"
+                                                    placeholder="December.29.2025">
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label" for="blogPostImageUrl">Image Link (Google
+                                                    Drive or Direct)</label>
+                                                <input class="form-input" type="url" id="blogPostImageUrl"
+                                                    placeholder="https://drive.google.com/file/d/.../view" required>
+                                                <small class="text-muted">Make sure the Drive image is shared as
+                                                    <b>Anyone with the link</b>.</small>
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label" for="blogPostExcerpt">Excerpt</label>
+                                                <textarea class="form-input" id="blogPostExcerpt" style="height:200px;"
+                                                    placeholder="Short description..."></textarea>
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label" for="blogPostDescription">Description</label>
+                                                <textarea class="form-input" id="blogPostDescription" style="height:200px;"
+                                                    placeholder="Write full post details..."></textarea>
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="blogPostActive">Active</label>
+                                                <select class="form-input" id="blogPostActive">
+                                                    <option value="true" selected>Yes</option>
+                                                    <option value="false">No</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                            <button type="submit" id="blogPostSaveBtn" class="sec-btn primary-btn">Save
+                                                Post</button>
+                                            <button type="button" id="blogPostResetBtn" class="sec-btn">Reset</button>
+                                            <button type="button" id="blogPostReloadBtn" class="sec-btn">Reload</button>
+                                        </div>
+                                    </form>
+
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-striped align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Title</th>
+                                                    <th style="width:170px;">Date</th>
+                                                    <th style="width:110px;">Active</th>
+                                                    <th style="width:220px;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="blogPostsBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">No blog posts yet.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="auth-divider"></div>
+
                             <div class="row admin-section" id="adminMenuCategories">
                                 <div class="col-lg-12">
                                     <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Menu Categories
@@ -572,6 +602,7 @@
                                     <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Menu Items</h3>
                                     <form id="menuItemForm" action="#" method="get">
                                         <input type="hidden" id="menuItemId" value="">
+
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label" for="menuItemTitle">Title</label>
@@ -678,102 +709,7 @@
 
     </main>
 
-    <footer class="site-footer" id="contact">
-        <div class="top-footer section">
-            <div class="sec-wp">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-lg-4">
-                            <div class="footer-info">
-                                <div class="footer-logo">
-                                    <a href="index.html">
-                                        <img src="logo.png" alt="">
-                                    </a>
-                                </div>
-                                <p>Thank you for visiting MJ Restrone. We appreciate your support and look forward to
-                                    serving you delicious food.
-                                </p>
-                                <div class="social-icon">
-                                    <ul>
-                                        <li>
-                                            <a href="https://www.facebook.com/">
-                                                <i class="uil uil-facebook-f"></i>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="#">
-                                                <i class="uil uil-instagram"></i>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a
-                                                href="https://github.com/signup?return_to=https%3A%2F%2Fgithub.com%2Flogin&source=login">
-                                                <i class="uil uil-github-alt"></i>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="https://www.youtube.com/@wallsflow">
-                                                <i class="uil uil-youtube"></i>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-8">
-                            <div class="footer-flex-box">
-                                <div class="footer-table-info">
-                                    <h3 class="h3-title">open hours</h3>
-                                    <ul>
-                                        <li><i class="uil uil-clock"></i> Mon-Thurs : 9am - 10pm</li>
-                                        <li><i class="uil uil-clock"></i> Fri-Sun : 11am - 12pm</li>
-                                    </ul>
-                                </div>
-
-                                <div class="footer-menu food-nav-menu">
-                                    <h3 class="h3-title">Links</h3>
-                                    <ul class="column-2">
-                                        <li>
-                                            <a href="index.html#home" class="footer-active-menu">Home</a>
-                                        </li>
-                                        <li><a href="index.html#about">About</a></li>
-                                        <li><a href="index.html#menu">Menu</a></li>
-                                        <li><a href="index.html#gallery">Gallery</a></li>
-                                        <li><a href="index.html#blog">Blog</a></li>
-                                        <li><a href="index.html#contact">Contact</a></li>
-                                    </ul>
-                                </div>
-
-                                <div class="footer-menu">
-                                    <h3 class="h3-title">Company</h3>
-                                    <ul>
-                                        <li><a href="#">Terms & Conditions</a></li>
-                                        <li><a href="#">Privacy Policy</a></li>
-                                        <li><a href="#">Cookie Policy</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bottom-footer">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-12 text-center">
-                        <div class="copyright-text">
-                            <p>Copyright &copy; 2025 <span class="name">MJ Restrone.</span>All Rights Reserved.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <button class="scrolltop"><i class="uil uil-angle-up"></i></button>
-            </div>
-        </div>
-    </footer>
+    
 
     <script src="assets/js/jquery-3.5.1.min.js"></script>
     <script src="assets/js/bootstrap.min.js"></script>

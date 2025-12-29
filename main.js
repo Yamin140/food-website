@@ -209,13 +209,168 @@ $(document).ready(function ($) {
             window.location.hash = href;
         }
     });
+
+    function __extractDriveFileId(url) {
+        if (!url || typeof url !== "string") return null;
+
+        var match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) return match[1];
+
+        match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) return match[1];
+
+        match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) return match[1];
+
+        return null;
+    }
+
+    function __normalizeBlogImageUrl(url) {
+        var driveId = __extractDriveFileId(url);
+        if (driveId) {
+            return "https://drive.google.com/uc?export=view&id=" + driveId;
+        }
+        return url;
+    }
+
+    function __escapeHtml(input) {
+        return String(input || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function __openBlogModal(post) {
+        var title = post && post.title ? String(post.title) : "";
+        var date = post && post.date ? String(post.date) : "";
+        var image = post && post.image ? String(post.image) : "";
+        var description = post && post.description ? String(post.description) : (post && post.excerpt ? String(post.excerpt) : "");
+
+        var $title = jQuery("#blogModalTitle");
+        var $date = jQuery("#blogModalDate");
+        var $img = jQuery("#blogModalImage");
+        var $desc = jQuery("#blogModalDescription");
+
+        if ($title.length) $title.text(title);
+        if ($date.length) $date.text(date);
+
+        var finalImg = image ? __normalizeBlogImageUrl(image) : "";
+        if ($img.length) {
+            if (finalImg) {
+                $img.attr("src", finalImg);
+                $img.css("display", "block");
+            } else {
+                $img.attr("src", "");
+                $img.css("display", "none");
+            }
+        }
+
+        if ($desc.length) {
+            $desc.html(__escapeHtml(description));
+        }
+
+        var modalEl = document.getElementById("blogDetailsModal");
+        if (!modalEl) return;
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            if (typeof window.bootstrap.Modal.getOrCreateInstance === "function") {
+                var instance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                instance.show();
+            } else {
+                var instanceLegacy = new window.bootstrap.Modal(modalEl);
+                instanceLegacy.show();
+            }
+            return;
+        }
+
+        if (window.jQuery && jQuery.fn && typeof jQuery.fn.modal === "function") {
+            jQuery(modalEl).modal("show");
+        }
+    }
+
+    function __renderBlogCards(posts) {
+        var $container = jQuery("#blog-cards");
+        if (!$container.length) return;
+
+        $container.empty();
+        if (!posts || !posts.length) return;
+
+        for (var i = 0; i < posts.length; i++) {
+            var post = posts[i] || {};
+            var imgUrl = __normalizeBlogImageUrl(post.image);
+
+            var $col = jQuery("<div />", { class: "col-lg-4" });
+            var $box = jQuery("<div />", { class: "blog-box" });
+            var $img = jQuery("<div />", { class: "blog-img back-img" });
+            if (imgUrl) {
+                $img.css("background-image", "url(" + imgUrl + ")");
+            }
+            var $text = jQuery("<div />", { class: "blog-text" });
+
+            if (post.date) {
+                $text.append(jQuery("<p />", { class: "blog-date", text: post.date }));
+            }
+            $text.append(jQuery("<a />", { href: post.url || "#", class: "h4-title", text: post.title || "" }));
+            if (post.excerpt) {
+                $text.append(jQuery("<p />", { text: post.excerpt }));
+            }
+
+            var $readMore = jQuery("<a />", { href: "#", class: "sec-btn", text: post.cta || "Read More" });
+            (function (p) {
+                $readMore.on("click.__blogReadMore", function (e) {
+                    e.preventDefault();
+                    __openBlogModal(p);
+                });
+            })(post);
+            $text.append($readMore);
+
+            $box.append($img);
+            $box.append($text);
+            $col.append($box);
+            $container.append($col);
+        }
+    }
+
+    window.__renderBlogCards = __renderBlogCards;
+    window.blogPosts = window.blogPosts || [
+        {
+            date: "September.15.2025",
+            title: "Energy Drink which you can make at home.",
+            excerpt: "Blend a small banana with a cup of coconut water, a teaspoon of honey, chia seeds, and a squeeze of lemon or lime. Add ice if you like it chilled, then enjoy immediately for a quick, healthy energy boost.",
+            description: "Blend a small banana with a cup of coconut water, a teaspoon of honey, chia seeds, and a squeeze of lemon or lime. Add ice if you like it chilled, then enjoy immediately for a quick, healthy energy boost.",
+            image: "assets/images/blog/blog1.jpg",
+            url: "#",
+            cta: "Read More",
+        },
+        {
+            date: "October.10.2025",
+            title: "Fresh Veggie and rice combo for dinner.",
+            excerpt: "Cook rice until fluffy, then sauté fresh veggies like bell peppers, carrots, and broccoli with garlic and spices. Mix the veggies into the rice, season with salt, pepper, and a splash of soy sauce or lemon juice, and serve hot for a quick, healthy dinner.",
+            description: "Cook rice until fluffy, then sauté fresh veggies like bell peppers, carrots, and broccoli with garlic and spices. Mix the veggies into the rice, season with salt, pepper, and a splash of soy sauce or lemon juice, and serve hot for a quick, healthy dinner.",
+            image: "assets/images/blog/blog2.jpg",
+            url: "#",
+            cta: "Read More",
+        },
+        {
+            date: "November.25.2025",
+            title: "Chicken burger with double nuggets",
+            excerpt: "For a delicious chicken burger with double nuggets, grill or pan-fry a chicken patty until fully cooked. Toast a burger bun and layer it with lettuce, tomato, and your favorite sauce. Place the cooked chicken patty on the bun, then add two crispy chicken nuggets on top for extra crunch and flavor. Close the bun and serve hot with fries or a side salad for a satisfying meal.",
+            description: "For a delicious chicken burger with double nuggets, grill or pan-fry a chicken patty until fully cooked. Toast a burger bun and layer it with lettuce, tomato, and your favorite sauce. Place the cooked chicken patty on the bun, then add two crispy chicken nuggets on top for extra crunch and flavor. Close the bun and serve hot with fries or a side salad for a satisfying meal.",
+            image: "assets/images/blog/blog3.jpg",
+            url: "#",
+            cta: "Read More",
+        },
+    ];
+
+    __renderBlogCards(window.blogPosts);
 });
 
 jQuery(window).on('load', function () {
     $('body').removeClass('body-fixed');
 
     function setupMenuFilterActiveBar() {
-        // activating tab of filter (works with dynamic filters)
         let targets = document.querySelectorAll(".filter");
         if (!targets || !targets.length) return;
 
@@ -230,7 +385,6 @@ jQuery(window).on('load', function () {
             targets[i].addEventListener("click", moveBar);
         }
 
-        // initial position on first === All
         if (window.gsap) {
             gsap.set(".filter-active", {
                 x: targets[0].offsetLeft,

@@ -104,6 +104,18 @@ const menuItemResetBtn = document.getElementById("menuItemResetBtn");
 const menuItemReloadBtn = document.getElementById("menuItemReloadBtn");
 const menuItemsBodyEl = document.getElementById("menuItemsBody");
 
+const blogPostForm = document.getElementById("blogPostForm");
+const blogPostIdEl = document.getElementById("blogPostId");
+const blogPostTitleEl = document.getElementById("blogPostTitle");
+const blogPostDateEl = document.getElementById("blogPostDate");
+const blogPostImageUrlEl = document.getElementById("blogPostImageUrl");
+const blogPostExcerptEl = document.getElementById("blogPostExcerpt");
+const blogPostDescriptionEl = document.getElementById("blogPostDescription");
+const blogPostActiveEl = document.getElementById("blogPostActive");
+const blogPostResetBtn = document.getElementById("blogPostResetBtn");
+const blogPostReloadBtn = document.getElementById("blogPostReloadBtn");
+const blogPostsBodyEl = document.getElementById("blogPostsBody");
+
 const homeBannerRef = doc(db, "siteSettings", "homeBanner");
 const aboutSectionRef = doc(db, "siteSettings", "aboutSection");
 const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
@@ -114,12 +126,104 @@ const gallerySliderRef = doc(db, "siteSettings", "gallerySlider");
 const menuCategoriesCol = collection(db, "menuCategories");
 const menuItemsCol = collection(db, "menuItems");
 const chefsCol = collection(db, "chefs");
+const blogPostsCol = collection(db, "blogPosts");
 
 let brandsLogos = [];
 let menuCategories = [];
 let menuItems = [];
 let gallerySliderImages = [];
 let chefs = [];
+let blogPosts = [];
+
+function resetBlogPostForm() {
+    if (blogPostIdEl) blogPostIdEl.value = "";
+    if (blogPostTitleEl) blogPostTitleEl.value = "";
+    if (blogPostDateEl) blogPostDateEl.value = "";
+    if (blogPostImageUrlEl) blogPostImageUrlEl.value = "";
+    if (blogPostExcerptEl) blogPostExcerptEl.value = "";
+    if (blogPostDescriptionEl) blogPostDescriptionEl.value = "";
+    if (blogPostActiveEl) blogPostActiveEl.value = "true";
+}
+
+function renderBlogPostsTable() {
+    if (!blogPostsBodyEl) return;
+
+    if (!Array.isArray(blogPosts) || blogPosts.length === 0) {
+        blogPostsBodyEl.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No blog posts yet.</td></tr>';
+        return;
+    }
+
+    blogPostsBodyEl.innerHTML = blogPosts.map((p) => {
+        const safeTitle = (p.title || "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const safeDate = (p.date || "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const activeText = p.active !== false ? "Yes" : "No";
+
+        return `
+            <tr>
+                <td style="word-break:break-word;">${safeTitle}</td>
+                <td style="word-break:break-word;">${safeDate}</td>
+                <td>${activeText}</td>
+                <td>
+                    <div class="d-flex" style="gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="sec-btn" data-action="blogEdit" data-id="${p.id}">Edit</button>
+                        <button type="button" class="sec-btn" data-action="blogDelete" data-id="${p.id}">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+async function loadBlogPosts() {
+    try {
+        const snap = await getDocs(query(blogPostsCol, orderBy("createdAt", "desc")));
+        blogPosts = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+        renderBlogPostsTable();
+    } catch {
+        // ignore
+    }
+}
+
+async function saveBlogPost() {
+    const id = blogPostIdEl ? blogPostIdEl.value.trim() : "";
+    const title = blogPostTitleEl ? blogPostTitleEl.value.trim() : "";
+    const date = blogPostDateEl ? blogPostDateEl.value.trim() : "";
+    const imageUrlRaw = blogPostImageUrlEl ? blogPostImageUrlEl.value.trim() : "";
+    const imageUrl = imageUrlRaw ? (normalizeDriveImageUrl(imageUrlRaw) || imageUrlRaw) : "";
+    const excerpt = blogPostExcerptEl ? blogPostExcerptEl.value.trim() : "";
+    const description = blogPostDescriptionEl ? blogPostDescriptionEl.value.trim() : "";
+    const active = (blogPostActiveEl ? blogPostActiveEl.value : "true") === "true";
+
+    if (!title) throw new Error("Post title is required.");
+    if (!imageUrl) throw new Error("Post image link is required.");
+
+    const payload = {
+        title,
+        date,
+        imageUrl,
+        excerpt,
+        description,
+        active,
+        updatedAt: Date.now(),
+    };
+
+    if (id) {
+        await updateDoc(doc(db, "blogPosts", id), payload);
+        showSuccess("Blog post updated.");
+        return;
+    }
+
+    await addDoc(blogPostsCol, {
+        ...payload,
+        createdAt: Date.now(),
+    });
+    showSuccess("Blog post added.");
+}
+
+async function deleteBlogPostById(id) {
+    await deleteDoc(doc(db, "blogPosts", id));
+    showSuccess("Blog post deleted.");
+}
 
 function setupAdminSidebarNav() {
     if (!adminSidebarNavEl) return;
@@ -140,6 +244,34 @@ function setupAdminSidebarNav() {
             const id = getTargetId(link);
             link.classList.toggle("active", !!targetId && id === targetId);
         }
+    }
+
+    try {
+        const sections = Array.from(document.querySelectorAll(".admin-section[id]"));
+        if (sections.length) {
+            const linkById = new Map();
+            for (const link of links) {
+                const id = getTargetId(link);
+                if (id) linkById.set(id, link);
+            }
+
+            const ordered = [];
+            for (const sec of sections) {
+                const id = sec.getAttribute("id");
+                const link = id ? linkById.get(id) : null;
+                if (link) ordered.push(link);
+            }
+
+            for (const link of links) {
+                if (!ordered.includes(link)) ordered.push(link);
+            }
+
+            for (const link of ordered) {
+                adminSidebarNavEl.appendChild(link);
+            }
+        }
+    } catch {
+        // ignore
     }
 
     for (const link of links) {
@@ -168,6 +300,146 @@ function setupAdminSidebarNav() {
     if (hashId) {
         setActive(hashId);
     }
+
+    (function setupScrollSpy() {
+        const sections = Array.from(document.querySelectorAll(".admin-section[id]"));
+        if (!sections.length) return;
+
+        function computeTopOffset() {
+            const header = document.querySelector(".site-header");
+            const topbar = document.querySelector(".auth-topbar");
+            const h1 = header ? header.getBoundingClientRect().height : 0;
+            const h2 = topbar ? topbar.getBoundingClientRect().height : 0;
+            return Math.max(10, Math.round((h1 || h2 || 0) + 12));
+        }
+
+        let currentActive = "";
+        function setActiveSafe(id) {
+            if (!id || id === currentActive) return;
+            currentActive = id;
+            setActive(id);
+            if (window.history && typeof window.history.replaceState === "function") {
+                window.history.replaceState(null, "", `#${id}`);
+            }
+        }
+
+        let ticking = false;
+        function update() {
+            ticking = false;
+            const topOffset = computeTopOffset();
+
+            const viewportTop = window.scrollY + topOffset;
+            const viewportHeight = Math.max(0, window.innerHeight - topOffset);
+            const viewportCenter = viewportTop + viewportHeight / 2;
+
+            let candidate = "";
+            let bestDist = Infinity;
+
+            for (const sec of sections) {
+                const rect = sec.getBoundingClientRect();
+                const height = rect.height || 0;
+                const topAbs = rect.top + window.scrollY;
+                const centerAbs = topAbs + height / 2;
+                const dist = Math.abs(centerAbs - viewportCenter);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    candidate = sec.id;
+                }
+            }
+
+            if (!candidate && sections[0]) candidate = sections[0].id;
+            if (candidate) setActiveSafe(candidate);
+        }
+
+        function requestUpdate() {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(update);
+        }
+
+        update();
+        window.addEventListener("scroll", requestUpdate, { passive: true });
+        window.addEventListener("resize", requestUpdate);
+    })();
+}
+
+function setupAdminSidebarFixed() {
+    const sidebar = document.querySelector(".admin-sidebar");
+    if (!sidebar) return;
+
+    const parent = sidebar.parentElement;
+    if (!parent) return;
+
+    const placeholder = document.createElement("div");
+    placeholder.style.display = "none";
+    parent.insertBefore(placeholder, sidebar);
+
+    let isFixed = false;
+    let sidebarTopAbs = 0;
+    let ticking = false;
+
+    function computeTopOffset() {
+        const header = document.querySelector(".site-header");
+        const h = header ? header.getBoundingClientRect().height : 0;
+        return Math.max(10, Math.round(h + 12));
+    }
+
+    function computeAnchorTopAbs() {
+        const rect = sidebar.getBoundingClientRect();
+        sidebarTopAbs = rect.top + window.scrollY;
+    }
+
+    function applyFixedStyles() {
+        const topOffset = computeTopOffset();
+        const refRect = placeholder.getBoundingClientRect();
+        sidebar.style.top = topOffset + "px";
+        sidebar.style.left = refRect.left + "px";
+        sidebar.style.width = refRect.width + "px";
+    }
+
+    function setFixed(nextFixed) {
+        if (nextFixed === isFixed) return;
+        isFixed = nextFixed;
+
+        if (isFixed) {
+            const currentRect = sidebar.getBoundingClientRect();
+            placeholder.style.height = currentRect.height + "px";
+            placeholder.style.width = currentRect.width + "px";
+            placeholder.style.display = "block";
+            sidebar.classList.add("admin-sidebar-fixed");
+            applyFixedStyles();
+            return;
+        }
+
+        sidebar.classList.remove("admin-sidebar-fixed");
+        sidebar.style.left = "";
+        sidebar.style.width = "";
+        sidebar.style.top = "";
+        placeholder.style.display = "none";
+    }
+
+    function update() {
+        ticking = false;
+        if (!sidebarTopAbs) computeAnchorTopAbs();
+        const topOffset = computeTopOffset();
+        const shouldFix = window.scrollY + topOffset >= sidebarTopAbs;
+        setFixed(shouldFix);
+        if (isFixed) applyFixedStyles();
+    }
+
+    function requestUpdate() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(update);
+    }
+
+    computeAnchorTopAbs();
+    update();
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", () => {
+        computeAnchorTopAbs();
+        requestUpdate();
+    });
 }
 
 function renderChefsTable() {
@@ -366,6 +638,22 @@ function renderGallerySliderImages() {
         img.addEventListener("error", () => {
             img.style.display = "none";
         });
+    });
+}
+
+if (blogPostForm) {
+    blogPostForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+
+        try {
+            await saveBlogPost();
+            resetBlogPostForm();
+            await loadBlogPosts();
+        } catch (err) {
+            showError(err?.message || "Failed to save blog post.");
+        }
     });
 }
 
@@ -1131,6 +1419,23 @@ if (menuItemReloadBtn) {
     });
 }
 
+if (blogPostReloadBtn) {
+    blogPostReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadBlogPosts();
+        showSuccess("Blog posts loaded.");
+    });
+}
+
+if (blogPostResetBtn) {
+    blogPostResetBtn.addEventListener("click", () => {
+        clearError();
+        clearSuccess();
+        resetBlogPostForm();
+    });
+}
+
 if (menuItemsBodyEl) {
     menuItemsBodyEl.addEventListener("click", async (e) => {
         const btn = e.target.closest("button");
@@ -1168,6 +1473,42 @@ if (menuItemsBodyEl) {
             }
         } catch (err) {
             showError(err?.message || "Item action failed.");
+        }
+    });
+}
+
+if (blogPostsBodyEl) {
+    blogPostsBodyEl.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.getAttribute("data-action");
+        const id = btn.getAttribute("data-id");
+        if (!action || !id) return;
+
+        clearError();
+        clearSuccess();
+
+        try {
+            if (action === "blogEdit") {
+                const p = (blogPosts || []).find((x) => x.id === id);
+                if (!p) return;
+                if (blogPostIdEl) blogPostIdEl.value = p.id;
+                if (blogPostTitleEl) blogPostTitleEl.value = p.title || "";
+                if (blogPostDateEl) blogPostDateEl.value = p.date || "";
+                if (blogPostImageUrlEl) blogPostImageUrlEl.value = p.imageUrl || "";
+                if (blogPostExcerptEl) blogPostExcerptEl.value = p.excerpt || "";
+                if (blogPostDescriptionEl) blogPostDescriptionEl.value = p.description || "";
+                if (blogPostActiveEl) blogPostActiveEl.value = p.active !== false ? "true" : "false";
+                return;
+            }
+
+            if (action === "blogDelete") {
+                await deleteBlogPostById(id);
+                resetBlogPostForm();
+                await loadBlogPosts();
+            }
+        } catch (err) {
+            showError(err?.message || "Blog post action failed.");
         }
     });
 }
@@ -1269,6 +1610,7 @@ onAuthStateChanged(auth, (user) => {
             await loadOpeningTableSettings();
             await loadGallerySliderSettings();
             await loadChefs();
+            await loadBlogPosts();
             await loadMenuCategories();
             await loadMenuItems();
         } catch {
@@ -1278,3 +1620,4 @@ onAuthStateChanged(auth, (user) => {
 });
 
 setupAdminSidebarNav();
+setupAdminSidebarFixed();

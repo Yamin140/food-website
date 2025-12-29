@@ -157,6 +157,39 @@ async function applyChefsSettings() {
     }
 }
 
+async function applyBlogPostsSettings() {
+    const cardsEl = document.getElementById("blog-cards");
+    if (!cardsEl) return;
+
+    try {
+        const snap = await getDocs(query(collection(db, "blogPosts"), orderBy("createdAt", "desc")));
+        const posts = snap.docs
+            .map((d) => ({ id: d.id, ...(d.data() || {}) }))
+            .filter((p) => p && p.active !== false);
+
+        if (!posts.length) return;
+
+        const mapped = posts.map((p) => ({
+            id: p.id,
+            date: typeof p.date === "string" ? p.date : "",
+            title: typeof p.title === "string" ? p.title : "",
+            excerpt: typeof p.excerpt === "string" ? p.excerpt : "",
+            description: typeof p.description === "string" ? p.description : "",
+            image: typeof p.imageUrl === "string" ? p.imageUrl : (typeof p.image === "string" ? p.image : ""),
+            url: typeof p.url === "string" && p.url.trim() ? p.url.trim() : "#",
+            cta: "Read More",
+        }));
+
+        window.blogPosts = mapped;
+
+        if (typeof window.__renderBlogCards === "function") {
+            window.__renderBlogCards(mapped);
+        }
+    } catch {
+        // ignore
+    }
+}
+
 async function applyGallerySliderSettings() {
     const wrapperEl = document.getElementById("gallerySliderWrapper");
     if (!wrapperEl) return;
@@ -563,3 +596,4 @@ applyOpeningTableSettings();
 applyMenuSettings();
 applyGallerySliderSettings();
 applyChefsSettings();
+applyBlogPostsSettings();
