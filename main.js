@@ -228,7 +228,7 @@ $(document).ready(function ($) {
     function __normalizeBlogImageUrl(url) {
         var driveId = __extractDriveFileId(url);
         if (driveId) {
-            return "https://drive.google.com/uc?export=view&id=" + driveId;
+            return "https://drive.google.com/thumbnail?id=" + driveId + "&sz=w1200";
         }
         return url;
     }
@@ -290,6 +290,50 @@ $(document).ready(function ($) {
         }
     }
 
+    function __closeBlogModal() {
+        var modalEl = document.getElementById("blogDetailsModal");
+        if (!modalEl) return;
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            try {
+                if (typeof window.bootstrap.Modal.getInstance === "function") {
+                    var inst = window.bootstrap.Modal.getInstance(modalEl);
+                    if (inst && typeof inst.hide === "function") {
+                        inst.hide();
+                        return;
+                    }
+                }
+                var instLegacy = new window.bootstrap.Modal(modalEl);
+                if (instLegacy && typeof instLegacy.hide === "function") {
+                    instLegacy.hide();
+                    return;
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        if (window.jQuery && jQuery.fn && typeof jQuery.fn.modal === "function") {
+            jQuery(modalEl).modal("hide");
+        }
+    }
+
+    (function __bindBlogModalCloseFallback() {
+        var modalEl = document.getElementById("blogDetailsModal");
+        if (!modalEl) return;
+        if (modalEl.dataset && modalEl.dataset.blogCloseBound === "1") return;
+        if (modalEl.dataset) modalEl.dataset.blogCloseBound = "1";
+
+        modalEl.addEventListener("click", function (e) {
+            var t = e.target;
+            if (!t) return;
+            var btn = t.closest("[data-dismiss='modal'], [data-bs-dismiss='modal'], .close, .btn-close");
+            if (!btn) return;
+            e.preventDefault();
+            __closeBlogModal();
+        });
+    })();
+
     function __renderBlogCards(posts) {
         var $container = jQuery("#blog-cards");
         if (!$container.length) return;
@@ -305,7 +349,7 @@ $(document).ready(function ($) {
             var $box = jQuery("<div />", { class: "blog-box" });
             var $img = jQuery("<div />", { class: "blog-img back-img" });
             if (imgUrl) {
-                $img.css("background-image", "url(" + imgUrl + ")");
+                $img.css("background-image", "url(\"" + imgUrl + "\")");
             }
             var $text = jQuery("<div />", { class: "blog-text" });
 
