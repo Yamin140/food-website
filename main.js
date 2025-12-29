@@ -180,6 +180,35 @@ $(document).ready(function ($) {
 
     var scene = $(".js-parallax-scene").get(0);
     var parallaxInstance = new Parallax(scene);
+
+    var $scrollTopBtn = jQuery(".scrolltop");
+    if ($scrollTopBtn.length) {
+        $scrollTopBtn.off("click.__scrolltop").on("click.__scrolltop", function (e) {
+            e.preventDefault();
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        });
+    }
+
+    var $navLinks = jQuery(".foody-nav-menu a, .banner-btn a, .food-nav-menu a");
+    $navLinks.off("click.__anchorJump").on("click.__anchorJump", function (e) {
+        var href = jQuery(this).attr("href");
+        if (!href || href.charAt(0) !== "#") return;
+
+        var $target = jQuery(href);
+        if (!$target.length) return;
+
+        e.preventDefault();
+
+        var navHeight = jQuery(".site-header").outerHeight() || 0;
+        var top = $target.offset().top - navHeight;
+        window.scrollTo({ top: top, left: 0, behavior: "auto" });
+
+        if (window.history && typeof window.history.pushState === "function") {
+            window.history.pushState(null, "", href);
+        } else {
+            window.location.hash = href;
+        }
+    });
 });
 
 jQuery(window).on('load', function () {
