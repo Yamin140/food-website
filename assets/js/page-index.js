@@ -240,7 +240,7 @@ function renderCart() {
                 <div class="cart-item-info">
                     <p class="cart-item-title">${title}</p>
                     <div class="cart-item-meta">
-                        <span class="cart-item-price">Rs. ${escapeHtml(price)}</span>
+                        <span class="cart-item-price">Tk. ${escapeHtml(price)}</span>
                         <div class="cart-qty">
                             <button type="button" class="cart-qty-btn" data-action="dec">-</button>
                             <span class="cart-qty-value">${escapeHtml(qty)}</span>
@@ -872,7 +872,7 @@ async function applyMenuSettings() {
                             <div class="dist-bottom-row">
                                 <ul>
                                     <li>
-                                        <b>Rs. ${escapeHtml(price)}</b>
+                                        <b>Tk. ${escapeHtml(price)}</b>
                                     </li>
                                     <li>
                                         <button class="dish-add-btn" type="button" title="${description}" data-action="addToCart">

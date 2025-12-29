@@ -262,7 +262,7 @@ function renderOrdersTable() {
             <tr>
                 <td style="word-break:break-word;">${email}</td>
                 <td style="word-break:break-word;">${phone}</td>
-                <td>Rs. ${escapeInline(total)}</td>
+                <td>Tk. ${escapeInline(total)}</td>
                 <td>${statusCell}</td>
                 <td style="word-break:break-word;">${created}</td>
                 <td>
@@ -320,7 +320,7 @@ function openOrderDetails(order) {
         return sum + price * qty;
     }, 0);
     const orderTotal = Number.isFinite(Number(order.total)) ? Number(order.total) : computedTotal;
-    metaParts.push(`Total: Rs. ${orderTotal}`);
+    metaParts.push(`Total: Tk. ${orderTotal}`);
     if (orderDetailsMetaEl) orderDetailsMetaEl.textContent = metaParts.join(" | ");
 
     const items = itemsForTotal;
@@ -336,9 +336,9 @@ function openOrderDetails(order) {
                 return `
                     <tr>
                         <td style="word-break:break-word;">${title}</td>
-                        <td>Rs. ${escapeInline(price)}</td>
+                        <td>Tk. ${escapeInline(price)}</td>
                         <td>${escapeInline(qty)}</td>
-                        <td>Rs. ${escapeInline(subtotal)}</td>
+                        <td>Tk. ${escapeInline(subtotal)}</td>
                     </tr>
                 `;
             }).join("");
@@ -346,7 +346,7 @@ function openOrderDetails(order) {
             const totalRow = `
                 <tr>
                     <td colspan="3" class="text-end"><strong>Total</strong></td>
-                    <td><strong>Rs. ${escapeInline(orderTotal)}</strong></td>
+                    <td><strong>Tk. ${escapeInline(orderTotal)}</strong></td>
                 </tr>
             `;
 

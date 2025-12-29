@@ -126,7 +126,7 @@ function renderAccountOrdersTable() {
         return `
             <tr>
                 <td style="word-break:break-word;">${created}</td>
-                <td>Rs. ${escapeInline(total)}</td>
+                <td>Tk. ${escapeInline(total)}</td>
                 <td style="word-break:break-word;">${statusText}</td>
                 <td>
                     <div class="d-flex" style="gap:10px; flex-wrap:wrap;">${actions.join("")}</div>
@@ -142,7 +142,7 @@ function openAccountOrderDetails(order) {
 
     const metaParts = [];
     metaParts.push(`Status: ${getOrderDisplayStatus(order)}`);
-    metaParts.push(`Total: Rs. ${computeOrderTotal(order)}`);
+    metaParts.push(`Total: Tk. ${computeOrderTotal(order)}`);
     if (order.status === "cancelled_restaurant" && order.cancelReason) {
         metaParts.push(`Cancel Reason: ${order.cancelReason}`);
     }
@@ -161,9 +161,9 @@ function openAccountOrderDetails(order) {
                 return `
                     <tr>
                         <td style="word-break:break-word;">${title}</td>
-                        <td>Rs. ${escapeInline(price)}</td>
+                        <td>Tk. ${escapeInline(price)}</td>
                         <td>${escapeInline(qty)}</td>
-                        <td>Rs. ${escapeInline(subtotal)}</td>
+                        <td>Tk. ${escapeInline(subtotal)}</td>
                     </tr>
                 `;
             }).join("");
@@ -171,7 +171,7 @@ function openAccountOrderDetails(order) {
             const totalRow = `
                 <tr>
                     <td colspan="3" class="text-end"><strong>Total</strong></td>
-                    <td><strong>Rs. ${escapeInline(computeOrderTotal(order))}</strong></td>
+                    <td><strong>Tk. ${escapeInline(computeOrderTotal(order))}</strong></td>
                 </tr>
             `;
             accountOrderDetailsItemsEl.innerHTML = `${rows}${totalRow}`;
