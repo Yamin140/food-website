@@ -1,5 +1,6 @@
 import { db } from "../firebase/conf.js";
 import {
+    addDoc,
     collection,
     doc,
     getDoc,
@@ -16,7 +17,6 @@ function normalizeRecipeVideoUrl(inputUrl) {
     if (driveFileMatch && driveFileMatch[1]) {
         return { url: `https://drive.google.com/file/d/${driveFileMatch[1]}/preview`, type: "iframe" };
     }
-
     const driveOpenIdMatch = raw.match(/[?&]id=([^&]+)/i);
     if (raw.includes("drive.google.com") && driveOpenIdMatch && driveOpenIdMatch[1]) {
         return { url: `https://drive.google.com/file/d/${driveOpenIdMatch[1]}/preview`, type: "iframe" };
@@ -64,6 +64,64 @@ function escapeHtml(input) {
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+async function submitNewsletterEmail(email) {
+    await addDoc(collection(db, "newsletterSubscribers"), {
+        email: (email || "").toString().trim().toLowerCase(),
+        createdAt: Date.now(),
+    });
+}
+
+function showNewsletterSuccessModal() {
+    const modalEl = document.getElementById("newsletterSuccessModal");
+    if (!modalEl) return;
+
+    if (window.bootstrap && window.bootstrap.Modal) {
+        if (typeof window.bootstrap.Modal.getOrCreateInstance === "function") {
+            window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        } else {
+            new window.bootstrap.Modal(modalEl).show();
+        }
+        return;
+    }
+
+    if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === "function") {
+        window.jQuery(modalEl).modal("show");
+    }
+}
+
+function setupNewsletterForm() {
+    const form = document.getElementById("newsletterForm") || document.querySelector(".newsletter-form");
+    if (!form) return;
+
+    const emailInput = document.getElementById("newsletterEmail") || form.querySelector("input[type='email']");
+    if (!emailInput) return;
+
+    const submitBtn = document.getElementById("newsletterSubmitBtn") || form.querySelector("button[type='submit']");
+
+    function isValidEmail(value) {
+        const v = (value || "").toString().trim();
+        if (!v) return false;
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = (emailInput.value || "").toString().trim();
+        if (!isValidEmail(email)) return;
+
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+            await submitNewsletterEmail(email);
+            emailInput.value = "";
+            showNewsletterSuccessModal();
+        } catch {
+            // ignore
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    });
 }
 
 async function applyChefsSettings() {
@@ -597,3 +655,4 @@ applyMenuSettings();
 applyGallerySliderSettings();
 applyChefsSettings();
 applyBlogPostsSettings();
+setupNewsletterForm();

@@ -116,6 +116,9 @@ const blogPostResetBtn = document.getElementById("blogPostResetBtn");
 const blogPostReloadBtn = document.getElementById("blogPostReloadBtn");
 const blogPostsBodyEl = document.getElementById("blogPostsBody");
 
+const newsletterReloadBtn = document.getElementById("newsletterReloadBtn");
+const newsletterSubscribersBodyEl = document.getElementById("newsletterSubscribersBody");
+
 const homeBannerRef = doc(db, "siteSettings", "homeBanner");
 const aboutSectionRef = doc(db, "siteSettings", "aboutSection");
 const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
@@ -127,6 +130,7 @@ const menuCategoriesCol = collection(db, "menuCategories");
 const menuItemsCol = collection(db, "menuItems");
 const chefsCol = collection(db, "chefs");
 const blogPostsCol = collection(db, "blogPosts");
+const newsletterSubscribersCol = collection(db, "newsletterSubscribers");
 
 let brandsLogos = [];
 let menuCategories = [];
@@ -134,6 +138,40 @@ let menuItems = [];
 let gallerySliderImages = [];
 let chefs = [];
 let blogPosts = [];
+let newsletterSubscribers = [];
+
+function renderNewsletterSubscribersTable() {
+    if (!newsletterSubscribersBodyEl) return;
+
+    if (!Array.isArray(newsletterSubscribers) || newsletterSubscribers.length === 0) {
+        newsletterSubscribersBodyEl.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No subscribers yet.</td></tr>';
+        return;
+    }
+
+    newsletterSubscribersBodyEl.innerHTML = newsletterSubscribers.map((s) => {
+        const safeEmail = (s.email || "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const ts = typeof s.createdAt === "number" ? s.createdAt : 0;
+        const dateText = ts ? new Date(ts).toLocaleString() : "";
+        const safeDate = (dateText || "").toString().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        return `
+            <tr>
+                <td style="word-break:break-word;">${safeEmail}</td>
+                <td style="word-break:break-word;">${safeDate}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+async function loadNewsletterSubscribers() {
+    try {
+        const snap = await getDocs(query(newsletterSubscribersCol, orderBy("createdAt", "desc")));
+        newsletterSubscribers = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+        renderNewsletterSubscribersTable();
+    } catch {
+        // ignore
+    }
+}
 
 function resetBlogPostForm() {
     if (blogPostIdEl) blogPostIdEl.value = "";
@@ -1436,6 +1474,15 @@ if (blogPostResetBtn) {
     });
 }
 
+if (newsletterReloadBtn) {
+    newsletterReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadNewsletterSubscribers();
+        showSuccess("Newsletter subscribers loaded.");
+    });
+}
+
 if (menuItemsBodyEl) {
     menuItemsBodyEl.addEventListener("click", async (e) => {
         const btn = e.target.closest("button");
@@ -1611,6 +1658,7 @@ onAuthStateChanged(auth, (user) => {
             await loadGallerySliderSettings();
             await loadChefs();
             await loadBlogPosts();
+            await loadNewsletterSubscribers();
             await loadMenuCategories();
             await loadMenuItems();
         } catch {

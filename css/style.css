@@ -430,7 +430,6 @@ p {
     position: relative;
     z-index: 2;
     padding: 6px 30px;
-    margin: 10px 0 10px 0;
 }
 
 .sec-btn:hover {
@@ -477,7 +476,7 @@ p {
     padding: 3px 20px;
     border-radius: 60px;
     color: #ff8243;
-    font-size: 14px;
+    font-size: 25px;
 }
 
 .h2-title {
