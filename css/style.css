@@ -1274,6 +1274,8 @@ p {
 .top-footer, .bottom-footer {
     border-top: 1px solid rgb(204 204 204 / 40%);
     position: relative;
+    background-color: #ebebf1;
+
 }
 
 .footer-logo {
@@ -1345,7 +1347,7 @@ p {
     justify-content: center;
     align-items: center;
     border-radius: 50%;
-    background: #f3f3f5;
+    background: #c8c8cf;
     box-shadow: 9px 9px 12px #b2b2b3, -9px -9px 12px #ffffff;
     color: #ff8243;
     font-size: 26px;
