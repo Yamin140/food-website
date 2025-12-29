@@ -77,7 +77,11 @@ ul {
     transition: 0.5s;
     border-bottom: 1px solid transparent;
 }
-
+.site-header .wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;   
+}
 .site-header.sticky_head {
     background: rgb(255 255 255 / 80%);
     padding: 20px 0;
@@ -931,12 +935,25 @@ p {
     position: relative;
 }
 
+.team-slider .swiper-wrapper {
+    align-items: stretch;
+}
+
+.team-slider .swiper-slide {
+    height: auto;
+    display: flex;
+}
+
 .team-box {
     padding: 20px;
     border-radius: 30px;
     background: linear-gradient(145deg, #ececec, #ffffff);
     box-shadow: 28px 28px 45px #e6e6e6, -28px -28px 45px #ffffff;
     transition: 0.8s cubic-bezier(0.22, 0.78, 0.45, 1.02);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
 }
 
 .team-box:hover {
@@ -959,6 +976,7 @@ p {
 
 .social-icon {
     margin: 15px 0px 10px;
+    margin-top: auto;
 }
 
 .social-icon ul li {

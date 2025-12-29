@@ -56,7 +56,7 @@ $(document).ready(function ($) {
 
     var team_slider = new Swiper(".team-slider", {
         slidesPerView: 3,
-        spaceBetween: 30,
+        spaceBetween: 60,
         loop: true,
         autoplay: {
             delay: 3000,
@@ -167,15 +167,20 @@ $(document).ready(function ($) {
     var elementFirst = document.querySelector('.site-header');
     ScrollTrigger.create({
         trigger: "body",
-        start: "30px top",
+        start: "100px top",
         end: "bottom bottom",
 
-        onEnter: () => myFunction(),
-        onLeaveBack: () => myFunction(),
+        onEnter: () => setHeaderSticky(true),
+        onLeaveBack: () => setHeaderSticky(false),
     });
 
-    function myFunction() {
-        elementFirst.classList.toggle('sticky_head');
+    function setHeaderSticky(isSticky) {
+        if (!elementFirst) return;
+        if (isSticky) {
+            elementFirst.classList.add('sticky_head');
+        } else {
+            elementFirst.classList.remove('sticky_head');
+        }
     }
 
     var scene = $(".js-parallax-scene").get(0);
@@ -208,7 +213,102 @@ $(document).ready(function ($) {
         } else {
             window.location.hash = href;
         }
+
+        if (typeof window.__setActiveNavByHash === "function") {
+            window.__setActiveNavByHash(href);
+        }
     });
+
+    (function setupNavScrollSpy() {
+        var headerEl = document.querySelector(".site-header");
+        var headerHeight = headerEl ? (headerEl.offsetHeight || 0) : 0;
+
+        var headerLinks = Array.from(document.querySelectorAll(".header-menu .menu a[href^='#']"));
+        var footerLinks = Array.from(document.querySelectorAll(".footer-menu a[href^='#']"));
+        var allLinks = headerLinks.concat(footerLinks);
+        if (!allLinks.length) return;
+
+        function normalizeHash(h) {
+            if (!h) return "";
+            var s = String(h);
+            if (s.charAt(0) !== "#") return "";
+            return s.slice(1);
+        }
+
+        var ids = Array.from(new Set(allLinks.map(function (a) {
+            return normalizeHash(a.getAttribute("href"));
+        }).filter(Boolean)));
+
+        if (!ids.length) return;
+
+        function setActive(id) {
+            for (var i = 0; i < headerLinks.length; i++) {
+                var hid = normalizeHash(headerLinks[i].getAttribute("href"));
+                if (hid === id) {
+                    headerLinks[i].classList.add("active-menu");
+                } else {
+                    headerLinks[i].classList.remove("active-menu");
+                }
+            }
+
+            for (var j = 0; j < footerLinks.length; j++) {
+                var fid = normalizeHash(footerLinks[j].getAttribute("href"));
+                if (fid === id) {
+                    footerLinks[j].classList.add("footer-active-menu");
+                } else {
+                    footerLinks[j].classList.remove("footer-active-menu");
+                }
+            }
+        }
+
+        window.__setActiveNavByHash = function (hash) {
+            var id = normalizeHash(hash);
+            if (!id) return;
+            setActive(id);
+        };
+
+        function getCurrentId() {
+            headerHeight = headerEl ? (headerEl.offsetHeight || 0) : 0;
+            var y = (window.pageYOffset || document.documentElement.scrollTop || 0) + headerHeight + 5;
+            var current = ids[0];
+
+            for (var k = 0; k < ids.length; k++) {
+                var el = document.getElementById(ids[k]);
+                if (!el) continue;
+                var top = el.offsetTop;
+                var bottom = top + (el.offsetHeight || 0);
+
+                if (y >= top && y < bottom) {
+                    current = ids[k];
+                    break;
+                }
+
+                if (y >= top) {
+                    current = ids[k];
+                }
+            }
+
+            return current;
+        }
+
+        var ticking = false;
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(function () {
+                ticking = false;
+                setActive(getCurrentId());
+            });
+        }
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+
+        onScroll();
+        if (window.location && window.location.hash) {
+            setActive(normalizeHash(window.location.hash) || getCurrentId());
+        }
+    })();
 
     function __extractDriveFileId(url) {
         if (!url || typeof url !== "string") return null;
