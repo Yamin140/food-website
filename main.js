@@ -84,6 +84,9 @@ $(document).ready(function ($) {
                 target: ".dish-box-wp",
                 filter: ".filter",
             },
+            layout: {
+                display: "block",
+            },
             animation: {
                 effects: "fade",
                 easing: "ease-in-out",

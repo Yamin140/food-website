@@ -552,7 +552,7 @@ p {
 }
 
 .menu-tab-wp {
-    margin-bottom: 80px;
+    margin-bottom: 210px;
 }
 
 .menu-tab ul {
@@ -616,10 +616,7 @@ p {
 }
 
 .menu-list-row .bydefault_show .dish-box-wp {
-    display: flex !important;
-    flex-direction: column;
-    margin-top: 130px;
-    background: red;
+    display: block !important;
 }
 
 .dish-box-wp {
@@ -636,8 +633,7 @@ p {
     height: 100%;
     padding: 0 30px 40px;
     padding-top: 0;
-    /* margin: 130px 0 30px; */
-    margin: 0px 0 30px;
+    margin: 0 0 30px;
     transition: 0.8s cubic-bezier(0.22, 0.78, 0.45, 1.02);
 }
 
