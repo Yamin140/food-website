@@ -844,7 +844,7 @@ async function applyMenuSettings() {
                 const catClasses = cats.map((s) => escapeHtml(s)).join(" ");
 
                 return `
-                    <div class="col-lg-4 col-sm-6 dish-box-wp all ${catClasses}" data-cat="${escapeHtml(cats[0] || "all")}" data-item-id="${itemId}">
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-4 dish-box-wp all ${catClasses}" data-cat="${escapeHtml(cats[0] || "all")}" data-item-id="${itemId}">
                         <div class="dish-box text-center">
                             <div class="dist-img">
                                 <img src="${image || "assets/images/dish/1.png"}" alt="not found">
