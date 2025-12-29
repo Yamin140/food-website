@@ -30,6 +30,30 @@ $(document).ready(function ($) {
         },
     });
 
+    window.__refreshBookTableSwiper = function () {
+        try {
+            if (!book_table) return;
+            book_table.update();
+            book_table.updateSlides();
+            book_table.updateSize();
+            if (book_table.pagination && typeof book_table.pagination.render === "function") {
+                book_table.pagination.render();
+                book_table.pagination.update();
+            }
+            if (book_table.navigation && typeof book_table.navigation.update === "function") {
+                book_table.navigation.update();
+            }
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    if (window.__bookTableSwiperRefreshPending) {
+        window.__refreshBookTableSwiper();
+        window.__bookTableSwiperRefreshPending = false;
+    }
+
+
     var team_slider = new Swiper(".team-slider", {
         slidesPerView: 3,
         spaceBetween: 30,
@@ -63,6 +87,30 @@ $(document).ready(function ($) {
             },
         },
     });
+
+    window.__refreshTeamSwiper = function () {
+        try {
+            if (!team_slider) return;
+            team_slider.update();
+            team_slider.updateSlides();
+            team_slider.updateSize();
+            if (team_slider.pagination && typeof team_slider.pagination.render === "function") {
+                team_slider.pagination.render();
+                team_slider.pagination.update();
+            }
+            if (team_slider.navigation && typeof team_slider.navigation.update === "function") {
+                team_slider.navigation.update();
+            }
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    if (window.__teamSwiperRefreshPending) {
+        window.__refreshTeamSwiper();
+        window.__teamSwiperRefreshPending = false;
+    }
+
 
     jQuery(".filters").on("click", function () {
         jQuery("#menu-dish").removeClass("bydefault_show");

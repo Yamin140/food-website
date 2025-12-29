@@ -66,6 +66,154 @@ function escapeHtml(input) {
         .replace(/'/g, "&#039;");
 }
 
+async function applyChefsSettings() {
+    const wrapperEl = document.getElementById("teamSliderWrapper");
+    if (!wrapperEl) return;
+
+    try {
+        const chefsSnap = await getDocs(query(collection(db, "chefs"), orderBy("order", "asc")));
+        const chefs = chefsSnap.docs
+            .map((d) => ({ id: d.id, ...(d.data() || {}) }))
+            .filter((c) => c && c.active !== false);
+
+        if (!chefs.length) return;
+
+        async function canLoadImage(url) {
+            return await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+                img.src = url;
+            });
+        }
+
+        const fragment = document.createDocumentFragment();
+        let addedCount = 0;
+
+        for (const chef of chefs) {
+            const name = typeof chef.name === "string" ? chef.name.trim() : "";
+            const role = typeof chef.role === "string" ? chef.role.trim() : "";
+            const imageUrlRaw = typeof chef.imageUrl === "string" ? chef.imageUrl.trim() : "";
+            const imgUrl = imageUrlRaw ? normalizeDriveImageUrl(imageUrlRaw) : null;
+            if (!name || !imgUrl) continue;
+
+            const ok = await canLoadImage(imgUrl);
+            if (!ok) continue;
+
+            const facebookUrl = typeof chef.facebookUrl === "string" ? chef.facebookUrl.trim() : "";
+            const instagramUrl = typeof chef.instagramUrl === "string" ? chef.instagramUrl.trim() : "";
+            const youtubeUrl = typeof chef.youtubeUrl === "string" ? chef.youtubeUrl.trim() : "";
+
+            const socials = [
+                facebookUrl
+                    ? `<li><a href="${escapeHtml(facebookUrl)}" target="_blank" rel="noopener noreferrer"><i class="uil uil-facebook-f"></i></a></li>`
+                    : "",
+                instagramUrl
+                    ? `<li><a href="${escapeHtml(instagramUrl)}" target="_blank" rel="noopener noreferrer"><i class="uil uil-instagram"></i></a></li>`
+                    : "",
+                youtubeUrl
+                    ? `<li><a href="${escapeHtml(youtubeUrl)}" target="_blank" rel="noopener noreferrer"><i class="uil uil-youtube"></i></a></li>`
+                    : "",
+            ].filter(Boolean);
+
+            const socialHtml = socials.length
+                ? `
+                    <div class="social-icon">
+                        <ul>
+                            ${socials.join("\n")}
+                        </ul>
+                    </div>
+                `
+                : "";
+
+            const roleHtml = role ? `\n                                            <span>${escapeHtml(role)}</span>` : "";
+
+            const slide = document.createElement("div");
+            slide.className = "col-lg-4 swiper-slide";
+            slide.innerHTML = `
+                <div class="team-box text-center">
+                    <div style="background-image: url(${escapeHtml(imgUrl)});" class="team-img back-img"></div>
+                    <h3 class="h3-title">${escapeHtml(name)}${roleHtml}</h3>
+                    ${socialHtml}
+                </div>
+            `;
+
+            fragment.appendChild(slide);
+            addedCount += 1;
+        }
+
+        if (!addedCount) return;
+
+        wrapperEl.innerHTML = "";
+        wrapperEl.appendChild(fragment);
+
+        if (typeof window.__refreshTeamSwiper === "function") {
+            window.__refreshTeamSwiper();
+        } else {
+            window.__teamSwiperRefreshPending = true;
+        }
+    } catch {
+        // ignore
+    }
+}
+
+async function applyGallerySliderSettings() {
+    const wrapperEl = document.getElementById("gallerySliderWrapper");
+    if (!wrapperEl) return;
+
+    try {
+        const snap = await getDoc(doc(db, "siteSettings", "gallerySlider"));
+        if (!snap.exists()) return;
+
+        const data = snap.data() || {};
+        const images = Array.isArray(data.images)
+            ? data.images.filter((x) => typeof x === "string" && x.trim())
+            : [];
+
+        if (!images.length) return;
+
+        const fragment = document.createDocumentFragment();
+        let addedCount = 0;
+
+        async function canLoadImage(url) {
+            return await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+                img.src = url;
+            });
+        }
+
+        for (const rawUrl of images) {
+            const finalUrl = normalizeDriveImageUrl(rawUrl);
+            if (!finalUrl) continue;
+            const ok = await canLoadImage(finalUrl);
+            if (!ok) continue;
+
+            const link = document.createElement("a");
+            link.className = "book-table-img back-img swiper-slide";
+            link.setAttribute("data-fancybox", "table-slider");
+            link.href = finalUrl;
+            link.style.backgroundImage = `url(${finalUrl})`;
+            fragment.appendChild(link);
+            addedCount += 1;
+        }
+
+        if (!addedCount) return;
+
+        wrapperEl.innerHTML = "";
+        wrapperEl.appendChild(fragment);
+
+        if (typeof window.__refreshBookTableSwiper === "function") {
+            window.__refreshBookTableSwiper();
+        } else {
+            window.__bookTableSwiperRefreshPending = true;
+        }
+    } catch {
+        // ignore
+    }
+}
+
 async function applyMenuSettings() {
     const menuSectionEl = document.getElementById("menu");
     const filtersEl = document.querySelector(".menu-tab .filters");
@@ -413,3 +561,5 @@ applyAboutSectionSettings().then((res) => {
 applyBrandsSettings();
 applyOpeningTableSettings();
 applyMenuSettings();
+applyGallerySliderSettings();
+applyChefsSettings();

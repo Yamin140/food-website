@@ -60,6 +60,25 @@ const otPhoneLabelEl = document.getElementById("otPhoneLabel");
 const otPhoneTelEl = document.getElementById("otPhoneTel");
 const otReloadBtn = document.getElementById("otReloadBtn");
 
+const gallerySliderForm = document.getElementById("gallerySliderForm");
+const galleryImageUrlInputEl = document.getElementById("galleryImageUrlInput");
+const galleryAddImageBtn = document.getElementById("galleryAddImageBtn");
+const gallerySliderBodyEl = document.getElementById("gallerySliderBody");
+const galleryReloadBtn = document.getElementById("galleryReloadBtn");
+
+const chefForm = document.getElementById("chefForm");
+const chefIdEl = document.getElementById("chefId");
+const chefNameEl = document.getElementById("chefName");
+const chefRoleEl = document.getElementById("chefRole");
+const chefImageUrlEl = document.getElementById("chefImageUrl");
+const chefFacebookEl = document.getElementById("chefFacebook");
+const chefInstagramEl = document.getElementById("chefInstagram");
+const chefYoutubeEl = document.getElementById("chefYoutube");
+const chefActiveEl = document.getElementById("chefActive");
+const chefResetBtn = document.getElementById("chefResetBtn");
+const chefReloadBtn = document.getElementById("chefReloadBtn");
+const chefsBodyEl = document.getElementById("chefsBody");
+
 const menuCategoryForm = document.getElementById("menuCategoryForm");
 const menuCategoryIdEl = document.getElementById("menuCategoryId");
 const menuCategoryNameEl = document.getElementById("menuCategoryName");
@@ -90,13 +109,17 @@ const aboutSectionRef = doc(db, "siteSettings", "aboutSection");
 const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
 const brandsRef = doc(db, "siteSettings", "brands");
 const openingTableRef = doc(db, "siteSettings", "openingTable");
+const gallerySliderRef = doc(db, "siteSettings", "gallerySlider");
 
 const menuCategoriesCol = collection(db, "menuCategories");
 const menuItemsCol = collection(db, "menuItems");
+const chefsCol = collection(db, "chefs");
 
 let brandsLogos = [];
 let menuCategories = [];
 let menuItems = [];
+let gallerySliderImages = [];
+let chefs = [];
 
 function setupAdminSidebarNav() {
     if (!adminSidebarNavEl) return;
@@ -147,6 +170,132 @@ function setupAdminSidebarNav() {
     }
 }
 
+function renderChefsTable() {
+    if (!chefsBodyEl) return;
+
+    if (!chefs || chefs.length === 0) {
+        chefsBodyEl.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No chefs yet.</td></tr>';
+        return;
+    }
+
+    chefsBodyEl.innerHTML = chefs.map((c, idx) => {
+        const name = (c.name || "").toString();
+        const active = c.active !== false;
+        const order = Number.isFinite(c.order) ? c.order : idx + 1;
+        const safeName = name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        return `
+            <tr>
+                <td>
+                    <div class="d-flex" style="gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="sec-btn" data-action="chefUp" data-id="${c.id}">Up</button>
+                        <button type="button" class="sec-btn" data-action="chefDown" data-id="${c.id}">Down</button>
+                        <span class="text-muted" style="padding-left:6px;">${order}</span>
+                    </div>
+                </td>
+                <td style="word-break:break-word;">${safeName}</td>
+                <td>${active ? "Yes" : "No"}</td>
+                <td>
+                    <div class="d-flex" style="gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="sec-btn" data-action="chefEdit" data-id="${c.id}">Edit</button>
+                        <button type="button" class="sec-btn" data-action="chefDelete" data-id="${c.id}">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function resetChefForm() {
+    if (chefIdEl) chefIdEl.value = "";
+    if (chefNameEl) chefNameEl.value = "";
+    if (chefRoleEl) chefRoleEl.value = "";
+    if (chefImageUrlEl) chefImageUrlEl.value = "";
+    if (chefFacebookEl) chefFacebookEl.value = "";
+    if (chefInstagramEl) chefInstagramEl.value = "";
+    if (chefYoutubeEl) chefYoutubeEl.value = "";
+    if (chefActiveEl) chefActiveEl.value = "true";
+}
+
+async function loadChefs() {
+    try {
+        const snap = await getDocs(query(chefsCol, orderBy("order", "asc")));
+        chefs = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+        renderChefsTable();
+    } catch {
+        // ignore
+    }
+}
+
+async function saveChef() {
+    const id = chefIdEl ? chefIdEl.value.trim() : "";
+    const name = chefNameEl ? chefNameEl.value.trim() : "";
+    const role = chefRoleEl ? chefRoleEl.value.trim() : "";
+    const imageUrl = chefImageUrlEl ? chefImageUrlEl.value.trim() : "";
+    const facebookUrl = chefFacebookEl ? chefFacebookEl.value.trim() : "";
+    const instagramUrl = chefInstagramEl ? chefInstagramEl.value.trim() : "";
+    const youtubeUrl = chefYoutubeEl ? chefYoutubeEl.value.trim() : "";
+    const active = (chefActiveEl ? chefActiveEl.value : "true") === "true";
+
+    if (!name) throw new Error("Chef name is required.");
+    if (!imageUrl) throw new Error("Chef image link is required.");
+
+    const payload = {
+        name,
+        role,
+        imageUrl,
+        facebookUrl,
+        instagramUrl,
+        youtubeUrl,
+        active,
+        updatedAt: Date.now(),
+    };
+
+    if (id) {
+        await updateDoc(doc(db, "chefs", id), payload);
+        showSuccess("Chef updated.");
+        return;
+    }
+
+    const nextOrder = (chefs || []).reduce((max, c, idx) => {
+        const o = Number.isFinite(c.order) ? c.order : idx + 1;
+        return Math.max(max, o);
+    }, 0) + 1;
+
+    await addDoc(chefsCol, {
+        ...payload,
+        order: nextOrder,
+        createdAt: Date.now(),
+    });
+
+    showSuccess("Chef added.");
+}
+
+async function deleteChefById(id) {
+    await deleteDoc(doc(db, "chefs", id));
+    showSuccess("Chef deleted.");
+}
+
+async function moveChef(id, dir) {
+    const idx = (chefs || []).findIndex((c) => c.id === id);
+    if (idx < 0) return;
+    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= chefs.length) return;
+
+    const a = chefs[idx];
+    const b = chefs[swapIdx];
+
+    const aOrder = Number.isFinite(a.order) ? a.order : idx + 1;
+    const bOrder = Number.isFinite(b.order) ? b.order : swapIdx + 1;
+
+    await Promise.all([
+        updateDoc(doc(db, "chefs", a.id), { order: bOrder, updatedAt: Date.now() }),
+        updateDoc(doc(db, "chefs", b.id), { order: aOrder, updatedAt: Date.now() }),
+    ]);
+
+    showSuccess("Chef order updated.");
+}
+
 function slugify(input) {
     return (input || "")
         .toString()
@@ -189,6 +338,53 @@ function normalizeDriveImageUrl(inputUrl) {
     return raw;
 }
 
+function renderGallerySliderImages() {
+    if (!gallerySliderBodyEl) return;
+
+    if (!gallerySliderImages || gallerySliderImages.length === 0) {
+        gallerySliderBodyEl.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No gallery images yet.</td></tr>';
+        return;
+    }
+
+    gallerySliderBodyEl.innerHTML = gallerySliderImages.map((url, idx) => {
+        const finalUrl = normalizeDriveImageUrl(url);
+        const safeUrl = (url || "").replace(/"/g, "&quot;");
+        const imgHtml = finalUrl
+            ? `<img src="${finalUrl}" alt="" data-gallery-img="1" style="max-height:50px; max-width:140px; object-fit:cover; border-radius:8px;">`
+            : "";
+
+        return `
+            <tr>
+                <td style="word-break:break-all;">${safeUrl}</td>
+                <td>${imgHtml}</td>
+                <td><button type="button" class="sec-btn" data-action="removeGallery" data-index="${idx}">Remove</button></td>
+            </tr>
+        `;
+    }).join("");
+
+    gallerySliderBodyEl.querySelectorAll("img[data-gallery-img]").forEach((img) => {
+        img.addEventListener("error", () => {
+            img.style.display = "none";
+        });
+    });
+}
+
+if (chefForm) {
+    chefForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+
+        try {
+            await saveChef();
+            resetChefForm();
+            await loadChefs();
+        } catch (err) {
+            showError(err?.message || "Failed to save chef.");
+        }
+    });
+}
+
 function renderBrandsLogos() {
     if (!brandsBodyEl) return;
 
@@ -217,6 +413,24 @@ function renderBrandsLogos() {
         img.addEventListener("error", () => {
             img.style.display = "none";
         });
+    });
+}
+
+if (gallerySliderForm) {
+    gallerySliderForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+
+        try {
+            await setDoc(gallerySliderRef, {
+                images: Array.isArray(gallerySliderImages) ? gallerySliderImages : [],
+                updatedAt: Date.now(),
+            }, { merge: true });
+            showSuccess("Gallery slider updated.");
+        } catch (err) {
+            showError(err?.message || "Failed to save gallery slider.");
+        }
     });
 }
 
@@ -298,6 +512,17 @@ async function loadBrandsSettings() {
         if (brandsTitleInputEl) brandsTitleInputEl.value = typeof data.title === "string" ? data.title : "";
         brandsLogos = Array.isArray(data.logos) ? data.logos.filter((x) => typeof x === "string" && x.trim()) : [];
         renderBrandsLogos();
+    } catch {
+        // ignore
+    }
+}
+
+async function loadGallerySliderSettings() {
+    try {
+        const snap = await getDoc(gallerySliderRef);
+        const data = snap.exists() ? (snap.data() || {}) : {};
+        gallerySliderImages = Array.isArray(data.images) ? data.images.filter((x) => typeof x === "string" && x.trim()) : [];
+        renderGallerySliderImages();
     } catch {
         // ignore
     }
@@ -707,6 +932,20 @@ if (brandAddLogoBtn) {
     });
 }
 
+if (galleryAddImageBtn) {
+    galleryAddImageBtn.addEventListener("click", () => {
+        clearError();
+        clearSuccess();
+
+        const url = galleryImageUrlInputEl ? galleryImageUrlInputEl.value.trim() : "";
+        if (!url) return;
+        gallerySliderImages = Array.isArray(gallerySliderImages) ? gallerySliderImages : [];
+        gallerySliderImages.push(url);
+        if (galleryImageUrlInputEl) galleryImageUrlInputEl.value = "";
+        renderGallerySliderImages();
+    });
+}
+
 if (brandsBodyEl) {
     brandsBodyEl.addEventListener("click", (e) => {
         const btn = e.target.closest("button");
@@ -720,12 +959,100 @@ if (brandsBodyEl) {
     });
 }
 
+if (gallerySliderBodyEl) {
+    gallerySliderBodyEl.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.getAttribute("data-action");
+        if (action !== "removeGallery") return;
+        const idx = Number(btn.getAttribute("data-index"));
+        if (!Number.isFinite(idx) || idx < 0 || idx >= gallerySliderImages.length) return;
+        gallerySliderImages.splice(idx, 1);
+        renderGallerySliderImages();
+    });
+}
+
+if (chefsBodyEl) {
+    chefsBodyEl.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.getAttribute("data-action");
+        const id = btn.getAttribute("data-id");
+        if (!action || !id) return;
+
+        clearError();
+        clearSuccess();
+
+        try {
+            if (action === "chefEdit") {
+                const c = (chefs || []).find((x) => x.id === id);
+                if (!c) return;
+                if (chefIdEl) chefIdEl.value = c.id;
+                if (chefNameEl) chefNameEl.value = c.name || "";
+                if (chefRoleEl) chefRoleEl.value = c.role || "";
+                if (chefImageUrlEl) chefImageUrlEl.value = c.imageUrl || "";
+                if (chefFacebookEl) chefFacebookEl.value = c.facebookUrl || "";
+                if (chefInstagramEl) chefInstagramEl.value = c.instagramUrl || "";
+                if (chefYoutubeEl) chefYoutubeEl.value = c.youtubeUrl || "";
+                if (chefActiveEl) chefActiveEl.value = c.active === false ? "false" : "true";
+                return;
+            }
+
+            if (action === "chefDelete") {
+                await deleteChefById(id);
+                resetChefForm();
+                await loadChefs();
+                return;
+            }
+
+            if (action === "chefUp") {
+                await moveChef(id, "up");
+                await loadChefs();
+                return;
+            }
+
+            if (action === "chefDown") {
+                await moveChef(id, "down");
+                await loadChefs();
+            }
+        } catch (err) {
+            showError(err?.message || "Chef action failed.");
+        }
+    });
+}
+
 if (brandsReloadBtn) {
     brandsReloadBtn.addEventListener("click", async () => {
         clearError();
         clearSuccess();
         await loadBrandsSettings();
         showSuccess("Brands settings loaded.");
+    });
+}
+
+if (galleryReloadBtn) {
+    galleryReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadGallerySliderSettings();
+        showSuccess("Gallery slider settings loaded.");
+    });
+}
+
+if (chefResetBtn) {
+    chefResetBtn.addEventListener("click", () => {
+        clearError();
+        clearSuccess();
+        resetChefForm();
+    });
+}
+
+if (chefReloadBtn) {
+    chefReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadChefs();
+        showSuccess("Chefs loaded.");
     });
 }
 
@@ -940,6 +1267,8 @@ onAuthStateChanged(auth, (user) => {
             await loadAboutSectionSettings();
             await loadBrandsSettings();
             await loadOpeningTableSettings();
+            await loadGallerySliderSettings();
+            await loadChefs();
             await loadMenuCategories();
             await loadMenuItems();
         } catch {

@@ -109,6 +109,10 @@
                                             class="uil uil-store"></i><span>Brands</span></a>
                                     <a class="admin-nav-link" href="#adminOpeningTable" data-target="adminOpeningTable"><i
                                             class="uil uil-clock"></i><span>Opening Table</span></a>
+                                    <a class="admin-nav-link" href="#adminGallerySlider" data-target="adminGallerySlider"><i
+                                            class="uil uil-images"></i><span>Gallery Slider</span></a>
+                                    <a class="admin-nav-link" href="#adminChefs" data-target="adminChefs"><i
+                                            class="uil uil-user"></i><span>Chefs</span></a>
                                     <a class="admin-nav-link" href="#adminMenuCategories"
                                         data-target="adminMenuCategories"><i class="uil uil-restaurant"></i><span>Menu
                                             Categories</span></a>
@@ -365,6 +369,140 @@
                                             <button type="button" id="otReloadBtn" class="sec-btn">Reload</button>
                                         </div>
                                     </form>
+                                </div>
+                            </div>
+
+                            <div class="auth-divider"></div>
+
+                            <div class="row admin-section" id="adminGallerySlider">
+                                <div class="col-lg-12">
+                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Gallery Slider
+                                        Settings</h3>
+                                    <form id="gallerySliderForm" action="#" method="post">
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label" for="galleryImageUrlInput">Add Gallery Image
+                                                    Link (Google Drive or Direct)</label>
+                                                <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                                    <input class="form-input" type="url" id="galleryImageUrlInput"
+                                                        placeholder="https://drive.google.com/file/d/.../view"
+                                                        style="flex:1; min-width:260px;">
+                                                    <button type="button" id="galleryAddImageBtn" class="sec-btn">Add</button>
+                                                </div>
+                                                <small class="text-muted">Make sure the Drive image is shared as
+                                                    <b>Anyone with the link</b>.</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="table-responsive mt-2">
+                                            <table class="table table-striped align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Image URL</th>
+                                                        <th style="width:160px;">Preview</th>
+                                                        <th style="width:120px;">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="gallerySliderBody">
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted">No gallery images
+                                                            yet.</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                            <button type="submit" id="gallerySaveBtn" class="sec-btn primary-btn">Save
+                                                Gallery</button>
+                                            <button type="button" id="galleryReloadBtn" class="sec-btn">Reload</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="auth-divider"></div>
+
+                            <div class="row admin-section" id="adminChefs">
+                                <div class="col-lg-12">
+                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Meet our Chefs
+                                        Settings</h3>
+
+                                    <form id="chefForm" action="#" method="post">
+                                        <input type="hidden" id="chefId" value="">
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="chefName">Chef Name</label>
+                                                <input class="form-input" type="text" id="chefName"
+                                                    placeholder="Chef Name" required>
+                                            </div>
+
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="chefRole">Role (Optional)</label>
+                                                <input class="form-input" type="text" id="chefRole"
+                                                    placeholder='Head chef'>
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label" for="chefImageUrl">Chef Image Link (Google
+                                                    Drive or Direct)</label>
+                                                <input class="form-input" type="url" id="chefImageUrl"
+                                                    placeholder="https://drive.google.com/file/d/.../view" required>
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="chefFacebook">Facebook URL (Optional)</label>
+                                                <input class="form-input" type="url" id="chefFacebook"
+                                                    placeholder="https://facebook.com/...">
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="chefInstagram">Instagram URL (Optional)</label>
+                                                <input class="form-input" type="url" id="chefInstagram"
+                                                    placeholder="https://instagram.com/...">
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="chefYoutube">YouTube URL (Optional)</label>
+                                                <input class="form-input" type="url" id="chefYoutube"
+                                                    placeholder="https://youtube.com/...">
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="chefActive">Active</label>
+                                                <select class="form-input" id="chefActive">
+                                                    <option value="true" selected>Yes</option>
+                                                    <option value="false">No</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                            <button type="submit" id="chefSaveBtn" class="sec-btn primary-btn">Save
+                                                Chef</button>
+                                            <button type="button" id="chefResetBtn" class="sec-btn">Reset</button>
+                                            <button type="button" id="chefReloadBtn" class="sec-btn">Reload</button>
+                                        </div>
+                                    </form>
+
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-striped align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:90px;">Order</th>
+                                                    <th>Name</th>
+                                                    <th style="width:120px;">Active</th>
+                                                    <th style="width:220px;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="chefsBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">No chefs yet.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
 
