@@ -234,6 +234,49 @@ async function applyHomeBannerSettings() {
     }
 }
 
+async function applyOpeningTableSettings() {
+    const subTitleEl = document.getElementById("openingTableSubTitle");
+    const titleEl = document.getElementById("openingTableTitle");
+    const slot1TitleEl = document.getElementById("openingSlot1Title");
+    const slot1TimeEl = document.getElementById("openingSlot1Time");
+    const slot2TitleEl = document.getElementById("openingSlot2Title");
+    const slot2TimeEl = document.getElementById("openingSlot2Time");
+    const phoneLinkEl = document.getElementById("openingPhoneLink");
+
+    if (!subTitleEl && !titleEl && !slot1TitleEl && !slot1TimeEl && !slot2TitleEl && !slot2TimeEl && !phoneLinkEl) {
+        return;
+    }
+
+    try {
+        const snap = await getDoc(doc(db, "siteSettings", "openingTable"));
+        if (!snap.exists()) return;
+
+        const data = snap.data() || {};
+
+        if (subTitleEl && typeof data.subTitle === "string" && data.subTitle.trim()) subTitleEl.textContent = data.subTitle.trim();
+        if (titleEl && typeof data.title === "string" && data.title.trim()) titleEl.textContent = data.title.trim();
+
+        if (slot1TitleEl && typeof data.slot1Title === "string" && data.slot1Title.trim()) slot1TitleEl.textContent = data.slot1Title.trim();
+        if (slot1TimeEl && typeof data.slot1Time === "string" && data.slot1Time.trim()) slot1TimeEl.textContent = data.slot1Time.trim();
+
+        if (slot2TitleEl && typeof data.slot2Title === "string" && data.slot2Title.trim()) slot2TitleEl.textContent = data.slot2Title.trim();
+        if (slot2TimeEl && typeof data.slot2Time === "string" && data.slot2Time.trim()) slot2TimeEl.textContent = data.slot2Time.trim();
+
+        const phoneTel = typeof data.phoneTel === "string" ? data.phoneTel.trim() : "";
+        const phoneLabel = typeof data.phoneLabel === "string" ? data.phoneLabel.trim() : "";
+
+        if (phoneLinkEl) {
+            if (phoneLabel) phoneLinkEl.textContent = phoneLabel;
+            if (phoneTel) {
+                phoneLinkEl.setAttribute("href", `tel:${phoneTel}`);
+                if (!phoneLabel) phoneLinkEl.textContent = phoneTel;
+            }
+        }
+    } catch {
+        // ignore
+    }
+}
+
 async function applyAboutSectionSettings() {
     const subTitleEl = document.getElementById("aboutSubTitle");
     const titlePrefixEl = document.getElementById("aboutTitlePrefix");
@@ -368,4 +411,5 @@ applyAboutSectionSettings().then((res) => {
     }
 });
 applyBrandsSettings();
+applyOpeningTableSettings();
 applyMenuSettings();

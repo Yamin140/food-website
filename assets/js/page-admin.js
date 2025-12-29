@@ -19,6 +19,8 @@ const successEl = document.getElementById("adminSuccess");
 
 const logoutBtn = document.getElementById("logoutBtn");
 
+const adminSidebarNavEl = document.getElementById("adminSidebarNav");
+
 const hbForm = document.getElementById("homeBannerForm");
 const hbLine1El = document.getElementById("hbLine1");
 const hbLine2PrefixEl = document.getElementById("hbLine2Prefix");
@@ -46,6 +48,17 @@ const brandLogoUrlInputEl = document.getElementById("brandLogoUrlInput");
 const brandAddLogoBtn = document.getElementById("brandAddLogoBtn");
 const brandsBodyEl = document.getElementById("brandsBody");
 const brandsReloadBtn = document.getElementById("brandsReloadBtn");
+
+const openingTableForm = document.getElementById("openingTableForm");
+const otSubTitleEl = document.getElementById("otSubTitle");
+const otTitleEl = document.getElementById("otTitle");
+const otSlot1TitleEl = document.getElementById("otSlot1Title");
+const otSlot1TimeEl = document.getElementById("otSlot1Time");
+const otSlot2TitleEl = document.getElementById("otSlot2Title");
+const otSlot2TimeEl = document.getElementById("otSlot2Time");
+const otPhoneLabelEl = document.getElementById("otPhoneLabel");
+const otPhoneTelEl = document.getElementById("otPhoneTel");
+const otReloadBtn = document.getElementById("otReloadBtn");
 
 const menuCategoryForm = document.getElementById("menuCategoryForm");
 const menuCategoryIdEl = document.getElementById("menuCategoryId");
@@ -76,6 +89,7 @@ const homeBannerRef = doc(db, "siteSettings", "homeBanner");
 const aboutSectionRef = doc(db, "siteSettings", "aboutSection");
 const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
 const brandsRef = doc(db, "siteSettings", "brands");
+const openingTableRef = doc(db, "siteSettings", "openingTable");
 
 const menuCategoriesCol = collection(db, "menuCategories");
 const menuItemsCol = collection(db, "menuItems");
@@ -83,6 +97,55 @@ const menuItemsCol = collection(db, "menuItems");
 let brandsLogos = [];
 let menuCategories = [];
 let menuItems = [];
+
+function setupAdminSidebarNav() {
+    if (!adminSidebarNavEl) return;
+
+    const links = Array.from(adminSidebarNavEl.querySelectorAll(".admin-nav-link"));
+    if (!links.length) return;
+
+    function getTargetId(link) {
+        const fromData = (link.getAttribute("data-target") || "").trim();
+        if (fromData) return fromData;
+        const href = (link.getAttribute("href") || "").trim();
+        if (href.startsWith("#")) return href.slice(1);
+        return "";
+    }
+
+    function setActive(targetId) {
+        for (const link of links) {
+            const id = getTargetId(link);
+            link.classList.toggle("active", !!targetId && id === targetId);
+        }
+    }
+
+    for (const link of links) {
+        link.addEventListener("click", (e) => {
+            const targetId = getTargetId(link);
+            if (!targetId) return;
+            const targetEl = document.getElementById(targetId);
+            if (!targetEl) return;
+
+            e.preventDefault();
+            setActive(targetId);
+
+            try {
+                targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            } catch {
+                targetEl.scrollIntoView();
+            }
+
+            if (window.history && typeof window.history.replaceState === "function") {
+                window.history.replaceState(null, "", `#${targetId}`);
+            }
+        });
+    }
+
+    const hashId = (window.location.hash || "").replace(/^#/, "").trim();
+    if (hashId) {
+        setActive(hashId);
+    }
+}
 
 function slugify(input) {
     return (input || "")
@@ -235,6 +298,27 @@ async function loadBrandsSettings() {
         if (brandsTitleInputEl) brandsTitleInputEl.value = typeof data.title === "string" ? data.title : "";
         brandsLogos = Array.isArray(data.logos) ? data.logos.filter((x) => typeof x === "string" && x.trim()) : [];
         renderBrandsLogos();
+    } catch {
+        // ignore
+    }
+}
+
+async function loadOpeningTableSettings() {
+    try {
+        const snap = await getDoc(openingTableRef);
+        const data = snap.exists() ? (snap.data() || {}) : {};
+
+        if (otSubTitleEl) otSubTitleEl.value = typeof data.subTitle === "string" ? data.subTitle : "";
+        if (otTitleEl) otTitleEl.value = typeof data.title === "string" ? data.title : "";
+
+        if (otSlot1TitleEl) otSlot1TitleEl.value = typeof data.slot1Title === "string" ? data.slot1Title : "";
+        if (otSlot1TimeEl) otSlot1TimeEl.value = typeof data.slot1Time === "string" ? data.slot1Time : "";
+
+        if (otSlot2TitleEl) otSlot2TitleEl.value = typeof data.slot2Title === "string" ? data.slot2Title : "";
+        if (otSlot2TimeEl) otSlot2TimeEl.value = typeof data.slot2Time === "string" ? data.slot2Time : "";
+
+        if (otPhoneLabelEl) otPhoneLabelEl.value = typeof data.phoneLabel === "string" ? data.phoneLabel : "";
+        if (otPhoneTelEl) otPhoneTelEl.value = typeof data.phoneTel === "string" ? data.phoneTel : "";
     } catch {
         // ignore
     }
@@ -538,6 +622,33 @@ if (hbForm) {
     });
 }
 
+if (openingTableForm) {
+    openingTableForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+
+        const payload = {
+            subTitle: otSubTitleEl ? otSubTitleEl.value : "",
+            title: otTitleEl ? otTitleEl.value : "",
+            slot1Title: otSlot1TitleEl ? otSlot1TitleEl.value : "",
+            slot1Time: otSlot1TimeEl ? otSlot1TimeEl.value : "",
+            slot2Title: otSlot2TitleEl ? otSlot2TitleEl.value : "",
+            slot2Time: otSlot2TimeEl ? otSlot2TimeEl.value : "",
+            phoneLabel: otPhoneLabelEl ? otPhoneLabelEl.value : "",
+            phoneTel: otPhoneTelEl ? otPhoneTelEl.value : "",
+            updatedAt: Date.now(),
+        };
+
+        try {
+            await setDoc(openingTableRef, payload, { merge: true });
+            showSuccess("Opening table updated.");
+        } catch (err) {
+            showError(err?.message || "Failed to save Opening table settings.");
+        }
+    });
+}
+
 if (aboutForm) {
     aboutForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -615,6 +726,15 @@ if (brandsReloadBtn) {
         clearSuccess();
         await loadBrandsSettings();
         showSuccess("Brands settings loaded.");
+    });
+}
+
+if (otReloadBtn) {
+    otReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadOpeningTableSettings();
+        showSuccess("Opening table settings loaded.");
     });
 }
 
@@ -819,6 +939,7 @@ onAuthStateChanged(auth, (user) => {
             await loadHomeBannerSettings();
             await loadAboutSectionSettings();
             await loadBrandsSettings();
+            await loadOpeningTableSettings();
             await loadMenuCategories();
             await loadMenuItems();
         } catch {
@@ -826,3 +947,5 @@ onAuthStateChanged(auth, (user) => {
         }
     })();
 });
+
+setupAdminSidebarNav();

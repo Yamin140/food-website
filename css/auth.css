@@ -6,7 +6,8 @@
      background-image:url(../assets/images/blog-pattern-bg.png);
      background-position:center;
      background-repeat:repeat;
- }
+     margin-top: 60px;
+    }
  
  .auth-topbar{
      position:fixed;
@@ -88,4 +89,82 @@
  .auth-footer-text{
      margin:0;
      color:rgba(13,13,37,.7);
+ }
+
+ .admin-page{
+     align-items:flex-start;
+ }
+
+ .admin-sidebar{
+     position:sticky;
+     top:110px;
+     padding:16px;
+     border-radius:16px;
+     background:#f3f3f5;
+     box-shadow:inset 9px 9px 12px #e4e4e4,inset -9px -9px 12px #ffffff;
+ }
+
+ .admin-sidebar-title{
+     font-size:13px;
+     font-weight:700;
+     text-transform:uppercase;
+     letter-spacing:1px;
+     color:rgba(13,13,37,.7);
+     margin-bottom:10px;
+ }
+
+ .admin-nav{
+     display:flex;
+     flex-direction:column;
+     gap:8px;
+ }
+
+ .admin-nav-link{
+     display:flex;
+     align-items:center;
+     gap:10px;
+     padding:10px 12px;
+     border-radius:12px;
+     text-decoration:none;
+     color:#0d0d25;
+     transition:0.2s;
+ }
+
+ .admin-nav-link i{
+     font-size:18px;
+ }
+
+ .admin-nav-link:hover{
+     background:rgba(255,130,67,.12);
+     color:#0d0d25;
+ }
+
+ .admin-nav-link.active{
+     background:#ff8243;
+     color:#fff;
+ }
+
+ .admin-nav-link.active i{
+     color:#fff;
+ }
+
+ .admin-section{
+     scroll-margin-top:130px;
+ }
+
+ @media (max-width: 991px){
+     .admin-sidebar{
+         position:static;
+     }
+
+     .admin-nav{
+         flex-direction:row;
+         overflow-x:auto;
+         -webkit-overflow-scrolling:touch;
+     }
+
+     .admin-nav-link{
+         flex:0 0 auto;
+         white-space:nowrap;
+     }
  }
