@@ -556,7 +556,7 @@ p {
 }
 
 .menu-tab-wp {
-    margin-bottom: 210px;
+    margin-bottom: 100px;
 }
 
 .menu-tab ul {
@@ -626,6 +626,25 @@ p {
 .dish-box-wp {
     display: none;
     flex-direction: column;
+    padding-top: 130px;
+}
+
+@media (max-width: 1199px) {
+    .dish-box-wp {
+        padding-top: 110px;
+    }
+}
+
+@media (max-width: 767px) {
+    .dish-box-wp {
+        padding-top: 80px;
+    }
+}
+
+@media (max-width: 575px) {
+    .dish-box-wp {
+        padding-top: 70px;
+    }
 }
 
 .dish-box {
