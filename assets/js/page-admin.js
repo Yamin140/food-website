@@ -21,6 +21,11 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 const adminSidebarNavEl = document.getElementById("adminSidebarNav");
 
+const brandingForm = document.getElementById("brandingForm");
+const brandingLogoUrlEl = document.getElementById("brandingLogoUrl");
+const brandingFaviconUrlEl = document.getElementById("brandingFaviconUrl");
+const brandingReloadBtn = document.getElementById("brandingReloadBtn");
+
 const hbForm = document.getElementById("homeBannerForm");
 const hbLine1El = document.getElementById("hbLine1");
 const hbLine2PrefixEl = document.getElementById("hbLine2Prefix");
@@ -137,6 +142,7 @@ const aboutVideoRef = doc(db, "siteSettings", "aboutVideo");
 const brandsRef = doc(db, "siteSettings", "brands");
 const openingTableRef = doc(db, "siteSettings", "openingTable");
 const gallerySliderRef = doc(db, "siteSettings", "gallerySlider");
+const brandingRef = doc(db, "siteSettings", "branding");
 
 const menuCategoriesCol = collection(db, "menuCategories");
 const menuItemsCol = collection(db, "menuItems");
@@ -1091,6 +1097,28 @@ async function loadBrandsSettings() {
     }
 }
 
+async function loadBrandingSettings() {
+    try {
+        const snap = await getDoc(brandingRef);
+        const data = snap.exists() ? (snap.data() || {}) : {};
+        if (brandingLogoUrlEl) brandingLogoUrlEl.value = typeof data.logoUrl === "string" ? data.logoUrl : "";
+        if (brandingFaviconUrlEl) brandingFaviconUrlEl.value = typeof data.faviconUrl === "string" ? data.faviconUrl : "";
+    } catch {
+        // ignore
+    }
+}
+
+async function saveBrandingSettings() {
+    const logoUrl = (brandingLogoUrlEl ? brandingLogoUrlEl.value : "").toString().trim();
+    const faviconUrl = (brandingFaviconUrlEl ? brandingFaviconUrlEl.value : "").toString().trim();
+
+    await setDoc(brandingRef, {
+        logoUrl,
+        faviconUrl,
+        updatedAt: Date.now(),
+    }, { merge: true });
+}
+
 async function loadGallerySliderSettings() {
     try {
         const snap = await getDoc(gallerySliderRef);
@@ -1604,6 +1632,29 @@ if (brandsReloadBtn) {
     });
 }
 
+if (brandingReloadBtn) {
+    brandingReloadBtn.addEventListener("click", async () => {
+        clearError();
+        clearSuccess();
+        await loadBrandingSettings();
+        showSuccess("Branding settings loaded.");
+    });
+}
+
+if (brandingForm) {
+    brandingForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+        clearSuccess();
+        try {
+            await saveBrandingSettings();
+            showSuccess("Branding updated.");
+        } catch (err) {
+            showError(err?.message || "Failed to save branding.");
+        }
+    });
+}
+
 if (galleryReloadBtn) {
     galleryReloadBtn.addEventListener("click", async () => {
         clearError();
@@ -1965,6 +2016,7 @@ onAuthStateChanged(auth, (user) => {
 
             if (adminUserEl) adminUserEl.textContent = `Logged in as: ${user.email || ""}`;
             await loadHomeBannerSettings();
+            await loadBrandingSettings();
             await loadAboutSectionSettings();
             await loadBrandsSettings();
             await loadOpeningTableSettings();

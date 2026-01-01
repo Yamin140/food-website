@@ -51,6 +51,8 @@
                                     <a class="admin-nav-link active" href="#adminHomeBanner"
                                         data-target="adminHomeBanner"><i class="uil uil-image"></i><span>Home
                                             Banner</span></a>
+                                    <a class="admin-nav-link" href="#adminBranding" data-target="adminBranding"><i
+                                            class="uil uil-palette"></i><span>Branding</span></a>
                                     <a class="admin-nav-link" href="#adminAboutSection"
                                         data-target="adminAboutSection"><i class="uil uil-info-circle"></i><span>About
                                             Section</span></a>
@@ -79,6 +81,32 @@
                         </div>
 
                         <div class="col-lg-9">
+                            <div class="row admin-section" id="adminBranding">
+                                <div class="col-lg-12">
+                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Branding
+                                        Settings</h3>
+                                    <form id="brandingForm" action="#" method="post">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="brandingLogoUrl">Logo URL (Google Drive or Direct)</label>
+                                                <input class="form-input" type="url" id="brandingLogoUrl" placeholder="https://drive.google.com/file/d/.../view">
+                                            </div>
+
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="brandingFaviconUrl">Favicon URL (Google Drive or Direct)</label>
+                                                <input class="form-input" type="url" id="brandingFaviconUrl" placeholder="https://drive.google.com/file/d/.../view">
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                            <button type="submit" id="brandingSaveBtn" class="sec-btn primary-btn">Save</button>
+                                            <button type="button" id="brandingReloadBtn" class="sec-btn">Reload</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="auth-divider"></div>
                             <div class="row admin-section" id="adminHomeBanner">
                                 <div class="col-lg-12">
                                     <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Home Banner
@@ -148,6 +176,58 @@
                                     </form>
                                 </div>
                             </div>
+                            <div class="auth-divider"></div>
+                            <div class="row admin-section" id="adminBrands">
+                                <div class="col-lg-12">
+                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Brands Settings
+                                    </h3>
+                                    <form id="brandsForm" action="#" method="post">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="brandsTitleInput">Section Title</label>
+                                                <input class="form-input" type="text" id="brandsTitleInput"
+                                                    placeholder="Trusted by 70+ companies">
+                                            </div>
+
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="brandLogoUrlInput">Add Brand Logo Image
+                                                    Link</label>
+                                                <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                                    <input class="form-input" type="url" id="brandLogoUrlInput"
+                                                        placeholder="https://drive.google.com/file/d/.../view"
+                                                        style="flex:1; min-width:260px;">
+                                                    <button type="button" id="brandAddLogoBtn"
+                                                        class="sec-btn">Add</button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="table-responsive mt-2">
+                                            <table class="table table-striped align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Logo URL</th>
+                                                        <th style="width:140px;">Preview</th>
+                                                        <th style="width:120px;">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="brandsBody">
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted">No brand logos
+                                                            yet.</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                            <button type="submit" id="brandsSaveBtn" class="sec-btn primary-btn">Save
+                                                Brands</button>
+                                            <button type="button" id="brandsReloadBtn" class="sec-btn">Reload</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
 
                             <div class="auth-divider"></div>
 
@@ -208,60 +288,167 @@
                             </div>
 
                             <div class="auth-divider"></div>
+                            <div class="auth-divider"></div>
 
-                            <div class="row admin-section" id="adminBrands">
+                            <div class="row admin-section" id="adminMenuCategories">
                                 <div class="col-lg-12">
-                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Brands Settings
+                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Menu Categories
                                     </h3>
-                                    <form id="brandsForm" action="#" method="post">
+                                    <form id="menuCategoryForm" action="#" method="get">
+                                        <input type="hidden" id="menuCategoryId" value="">
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="brandsTitleInput">Section Title</label>
-                                                <input class="form-input" type="text" id="brandsTitleInput"
-                                                    placeholder="Trusted by 70+ companies">
+                                                <label class="form-label" for="menuCategoryName">Category Name</label>
+                                                <input class="form-input" type="text" id="menuCategoryName"
+                                                    placeholder="Breakfast" required>
                                             </div>
-
                                             <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="brandLogoUrlInput">Add Brand Logo Image
-                                                    Link</label>
-                                                <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
-                                                    <input class="form-input" type="url" id="brandLogoUrlInput"
-                                                        placeholder="https://drive.google.com/file/d/.../view"
-                                                        style="flex:1; min-width:260px;">
-                                                    <button type="button" id="brandAddLogoBtn"
-                                                        class="sec-btn">Add</button>
-                                                </div>
+                                                <label class="form-label" for="menuCategoryImageUrl">Category Image Link
+                                                    (Google Drive or Direct)</label>
+                                                <input class="form-input" type="url" id="menuCategoryImageUrl"
+                                                    placeholder="https://drive.google.com/file/d/.../view">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="menuCategoryActive">Active</label>
+                                                <select class="form-input" id="menuCategoryActive">
+                                                    <option value="true" selected>Yes</option>
+                                                    <option value="false">No</option>
+                                                </select>
                                             </div>
                                         </div>
-
-                                        <div class="table-responsive mt-2">
-                                            <table class="table table-striped align-middle">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Logo URL</th>
-                                                        <th style="width:140px;">Preview</th>
-                                                        <th style="width:120px;">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="brandsBody">
-                                                    <tr>
-                                                        <td colspan="3" class="text-center text-muted">No brand logos
-                                                            yet.</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-
                                         <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
-                                            <button type="submit" id="brandsSaveBtn" class="sec-btn primary-btn">Save
-                                                Brands</button>
-                                            <button type="button" id="brandsReloadBtn" class="sec-btn">Reload</button>
+                                            <button type="submit" id="menuCategorySaveBtn"
+                                                class="sec-btn primary-btn">Save Category</button>
+                                            <button type="button" id="menuCategoryResetBtn"
+                                                class="sec-btn">Reset</button>
+                                            <button type="button" id="menuCategoryReloadBtn"
+                                                class="sec-btn">Reload</button>
                                         </div>
                                     </form>
+
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-striped align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:90px;">Order</th>
+                                                    <th>Name</th>
+                                                    <th style="width:100px;">Active</th>
+                                                    <th style="width:220px;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="menuCategoriesBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">No categories yet.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="auth-divider"></div>
+
+                            <div class="row admin-section" id="adminMenuItems">
+                                <div class="col-lg-12">
+                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Menu Items</h3>
+                                    <form id="menuItemForm" action="#" method="get">
+                                        <input type="hidden" id="menuItemId" value="">
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label" for="menuItemTitle">Title</label>
+                                                <input class="form-input" type="text" id="menuItemTitle"
+                                                    placeholder="Fresh Chicken Veggies" required>
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label class="form-label" for="menuItemPrice">Price</label>
+                                                <input class="form-input" type="number" id="menuItemPrice"
+                                                    placeholder="499" required>
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label class="form-label" for="menuItemRating">Rating</label>
+                                                <input class="form-input" type="number" id="menuItemRating"
+                                                    placeholder="4.5" step="0.1">
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="menuItemCalories">Calories</label>
+                                                <input class="form-input" type="text" id="menuItemCalories"
+                                                    placeholder="120 calories">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="menuItemType">Type</label>
+                                                <select class="form-input" id="menuItemType">
+                                                    <option value="">Select</option>
+                                                    <option value="Veg">Veg</option>
+                                                    <option value="Non Veg">Non Veg</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="menuItemPersons">Persons</label>
+                                                <input class="form-input" type="number" id="menuItemPersons"
+                                                    placeholder="2">
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label" for="menuItemImageUrl">Image Link (Google
+                                                    Drive or Direct)</label>
+                                                <input class="form-input" type="url" id="menuItemImageUrl"
+                                                    placeholder="https://drive.google.com/file/d/.../view" required>
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label">Categories</label>
+                                                <div id="menuItemCategories" class="d-flex"
+                                                    style="gap:12px; flex-wrap:wrap;"></div>
+                                                <small class="text-muted">You can select multiple categories.</small>
+                                            </div>
+
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label" for="menuItemDescription">Description</label>
+                                                <textarea class="form-input" id="menuItemDescription" rows="3"
+                                                    placeholder="Optional"></textarea>
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label" for="menuItemActive">Active</label>
+                                                <select class="form-input" id="menuItemActive">
+                                                    <option value="true" selected>Yes</option>
+                                                    <option value="false">No</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
+                                            <button type="submit" id="menuItemSaveBtn" class="sec-btn primary-btn">Save
+                                                Item</button>
+                                            <button type="button" id="menuItemResetBtn" class="sec-btn">Reset</button>
+                                            <button type="button" id="menuItemReloadBtn" class="sec-btn">Reload</button>
+                                        </div>
+                                    </form>
+
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-striped align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Title</th>
+                                                    <th style="width:110px;">Price</th>
+                                                    <th style="width:120px;">Active</th>
+                                                    <th style="width:220px;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="menuItemsBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">No menu items yet.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
 
                             <div class="row admin-section" id="adminOpeningTable">
                                 <div class="col-lg-12">
@@ -594,167 +781,6 @@
                                             <tbody id="ordersBody">
                                                 <tr>
                                                     <td colspan="6" class="text-center text-muted">No orders yet.</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="auth-divider"></div>
-
-                            <div class="row admin-section" id="adminMenuCategories">
-                                <div class="col-lg-12">
-                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Menu Categories
-                                    </h3>
-                                    <form id="menuCategoryForm" action="#" method="get">
-                                        <input type="hidden" id="menuCategoryId" value="">
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="menuCategoryName">Category Name</label>
-                                                <input class="form-input" type="text" id="menuCategoryName"
-                                                    placeholder="Breakfast" required>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="menuCategoryImageUrl">Category Image Link
-                                                    (Google Drive or Direct)</label>
-                                                <input class="form-input" type="url" id="menuCategoryImageUrl"
-                                                    placeholder="https://drive.google.com/file/d/.../view">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="menuCategoryActive">Active</label>
-                                                <select class="form-input" id="menuCategoryActive">
-                                                    <option value="true" selected>Yes</option>
-                                                    <option value="false">No</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
-                                            <button type="submit" id="menuCategorySaveBtn"
-                                                class="sec-btn primary-btn">Save Category</button>
-                                            <button type="button" id="menuCategoryResetBtn"
-                                                class="sec-btn">Reset</button>
-                                            <button type="button" id="menuCategoryReloadBtn"
-                                                class="sec-btn">Reload</button>
-                                        </div>
-                                    </form>
-
-                                    <div class="table-responsive mt-3">
-                                        <table class="table table-striped align-middle">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width:90px;">Order</th>
-                                                    <th>Name</th>
-                                                    <th style="width:100px;">Active</th>
-                                                    <th style="width:220px;">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="menuCategoriesBody">
-                                                <tr>
-                                                    <td colspan="4" class="text-center text-muted">No categories yet.
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="auth-divider"></div>
-
-                            <div class="row admin-section" id="adminMenuItems">
-                                <div class="col-lg-12">
-                                    <h3 class="h3-title" style="font-size:22px; margin-bottom:12px;">Menu Items</h3>
-                                    <form id="menuItemForm" action="#" method="get">
-                                        <input type="hidden" id="menuItemId" value="">
-
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label" for="menuItemTitle">Title</label>
-                                                <input class="form-input" type="text" id="menuItemTitle"
-                                                    placeholder="Fresh Chicken Veggies" required>
-                                            </div>
-                                            <div class="col-md-3 mb-3">
-                                                <label class="form-label" for="menuItemPrice">Price</label>
-                                                <input class="form-input" type="number" id="menuItemPrice"
-                                                    placeholder="499" required>
-                                            </div>
-                                            <div class="col-md-3 mb-3">
-                                                <label class="form-label" for="menuItemRating">Rating</label>
-                                                <input class="form-input" type="number" id="menuItemRating"
-                                                    placeholder="4.5" step="0.1">
-                                            </div>
-
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label" for="menuItemCalories">Calories</label>
-                                                <input class="form-input" type="text" id="menuItemCalories"
-                                                    placeholder="120 calories">
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label" for="menuItemType">Type</label>
-                                                <select class="form-input" id="menuItemType">
-                                                    <option value="">Select</option>
-                                                    <option value="Veg">Veg</option>
-                                                    <option value="Non Veg">Non Veg</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label" for="menuItemPersons">Persons</label>
-                                                <input class="form-input" type="number" id="menuItemPersons"
-                                                    placeholder="2">
-                                            </div>
-
-                                            <div class="col-md-12 mb-3">
-                                                <label class="form-label" for="menuItemImageUrl">Image Link (Google
-                                                    Drive or Direct)</label>
-                                                <input class="form-input" type="url" id="menuItemImageUrl"
-                                                    placeholder="https://drive.google.com/file/d/.../view" required>
-                                            </div>
-
-                                            <div class="col-md-12 mb-3">
-                                                <label class="form-label">Categories</label>
-                                                <div id="menuItemCategories" class="d-flex"
-                                                    style="gap:12px; flex-wrap:wrap;"></div>
-                                                <small class="text-muted">You can select multiple categories.</small>
-                                            </div>
-
-                                            <div class="col-md-12 mb-3">
-                                                <label class="form-label" for="menuItemDescription">Description</label>
-                                                <textarea class="form-input" id="menuItemDescription" rows="3"
-                                                    placeholder="Optional"></textarea>
-                                            </div>
-
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label" for="menuItemActive">Active</label>
-                                                <select class="form-input" id="menuItemActive">
-                                                    <option value="true" selected>Yes</option>
-                                                    <option value="false">No</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-flex" style="gap:10px; flex-wrap:wrap;">
-                                            <button type="submit" id="menuItemSaveBtn" class="sec-btn primary-btn">Save
-                                                Item</button>
-                                            <button type="button" id="menuItemResetBtn" class="sec-btn">Reset</button>
-                                            <button type="button" id="menuItemReloadBtn" class="sec-btn">Reload</button>
-                                        </div>
-                                    </form>
-
-                                    <div class="table-responsive mt-3">
-                                        <table class="table table-striped align-middle">
-                                            <thead>
-                                                <tr>
-                                                    <th>Title</th>
-                                                    <th style="width:110px;">Price</th>
-                                                    <th style="width:120px;">Active</th>
-                                                    <th style="width:220px;">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="menuItemsBody">
-                                                <tr>
-                                                    <td colspan="4" class="text-center text-muted">No menu items yet.
-                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>

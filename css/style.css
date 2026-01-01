@@ -1206,6 +1206,7 @@ p {
     display: flex;
     flex-direction: column;
     flex: 1;
+    cursor: pointer;
 }
 
 .blog-sec .row > [class*="col-"] {
