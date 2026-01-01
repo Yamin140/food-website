@@ -775,6 +775,9 @@ p {
     transition: 0.3s;
     background: linear-gradient(145deg, #ffc954, #ffbc00);
     box-shadow: inset 4px 4px 8px #d6a029, inset -4px -4px 8px #ffd837;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .dish-add-btn i {

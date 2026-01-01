@@ -921,6 +921,59 @@ async function applyMenuSettings() {
         } else {
             window.__menuBarInitPending = true;
         }
+
+        try {
+            const url = new URL(window.location.href);
+            const cat = (url.searchParams.get("cat") || "").trim();
+            const item = (url.searchParams.get("item") || "").trim();
+
+            if (cat || item) {
+                const esc = (s) => (window.CSS && typeof window.CSS.escape === "function")
+                    ? window.CSS.escape(s)
+                    : String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+
+                window.setTimeout(() => {
+                    if (cat) {
+                        const selector = `.menu-tab .filters .filter[data-filter=".${esc(cat)}"]`;
+                        const targetFilter = document.querySelector(selector);
+                        if (targetFilter && typeof targetFilter.click === "function") {
+                            targetFilter.click();
+                        }
+                    }
+
+                    if (item) {
+                        const scrollToSelected = (attempt) => {
+                            const itemEl = document.querySelector(`.dish-box-wp[data-item-id="${esc(item)}"]`);
+                            const isVisible = !!(itemEl && itemEl.offsetParent !== null);
+
+                            if (!isVisible) {
+                                if ((attempt || 0) >= 15) return;
+                                window.setTimeout(() => scrollToSelected((attempt || 0) + 1), 200);
+                                return;
+                            }
+
+                            const header = document.querySelector(".site-header");
+                            const navHeight = header ? (header.offsetHeight || 0) : 0;
+                            const top = (itemEl.getBoundingClientRect().top + window.pageYOffset) - navHeight - 12;
+                            window.scrollTo({ top, left: 0, behavior: "smooth" });
+
+                            const box = itemEl.querySelector(".dish-box") || itemEl;
+                            const prevOutline = box.style.outline;
+                            const prevOutlineOffset = box.style.outlineOffset;
+                            box.style.outline = "2px solid #ff8243";
+                            box.style.outlineOffset = "6px";
+                            window.setTimeout(() => {
+                                box.style.outline = prevOutline;
+                                box.style.outlineOffset = prevOutlineOffset;
+                            }, 2000);
+                        };
+
+                        window.setTimeout(() => scrollToSelected(0), 150);
+                    }
+                }, 50);
+            }
+        } catch {
+        }
     } catch {
         if (menuSectionEl) menuSectionEl.style.display = "none";
     }
