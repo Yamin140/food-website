@@ -61,7 +61,7 @@ function scoreAnyMatch(haystack, terms) {
     return score;
 }
 
-const CACHE_KEY = "ajaxSearchCacheV1";
+const CACHE_KEY = "ajaxSearchCacheV2";
 const CACHE_TTL_MS = 30 * 60 * 1000;
 let memoryCache = null;
 
@@ -120,8 +120,8 @@ function buildMenuDoc(it) {
         : "";
 
     const url = id
-        ? `index.html?${catSlug ? `cat=${encodeURIComponent(catSlug)}&` : ""}item=${encodeURIComponent(id)}#menu`
-        : "index.html#menu";
+        ? `search.html?${catSlug ? `cat=${encodeURIComponent(catSlug)}&` : ""}item=${encodeURIComponent(id)}&q=${encodeURIComponent(title)}`
+        : `search.html?q=${encodeURIComponent(title)}`;
 
     const text = [title, description, type, calories, categories, price].filter(Boolean).join(" ");
 

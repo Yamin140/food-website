@@ -305,18 +305,29 @@ async function runSearch(q) {
             .filter(Boolean)
             .sort((a, b) => (b._score || 0) - (a._score || 0));
 
+        const itemId = getQueryParam("item");
+        const itemIdStr = String(itemId || "").trim();
+        const exactItemMatches = itemIdStr
+            ? scored.filter((x) => x && x.kind === "menu" && String(x.id || "") === itemIdStr)
+            : [];
+        const finalResults = exactItemMatches.length ? exactItemMatches : scored;
+
         if (loadingEl) loadingEl.style.display = "none";
 
-        summaryEl.textContent = scored.length
-            ? `Found ${scored.length} result(s) for "${q}"`
-            : `No results for "${q}"`;
+        const label = exactItemMatches.length
+            ? (exactItemMatches[0]?.title || q || "")
+            : q;
 
-        if (!scored.length) {
+        summaryEl.textContent = finalResults.length
+            ? `Found ${finalResults.length} result(s) for "${label}"`
+            : (q ? `No results for "${q}"` : "No results.");
+
+        if (!finalResults.length) {
             if (emptyEl) emptyEl.style.display = "";
             return;
         }
 
-        renderResults(resultsEl, scored);
+        renderResults(resultsEl, finalResults);
     } catch (err) {
         if (loadingEl) loadingEl.style.display = "none";
         summaryEl.textContent = "Search failed. Please try again.";
@@ -330,6 +341,7 @@ async function runSearch(q) {
 
 function init() {
     const q = getQueryParam("q");
+    const itemId = getQueryParam("item");
     const input = document.getElementById("searchInput");
     const form = document.getElementById("searchForm");
 
@@ -340,11 +352,13 @@ function init() {
             e.preventDefault();
             const value = (input && input.value) ? input.value : "";
             setQueryParam("q", value);
+            setQueryParam("item", "");
+            setQueryParam("cat", "");
             runSearch(value);
         });
     }
 
-    if (q && q.trim()) {
+    if ((q && q.trim()) || (itemId && itemId.trim())) {
         runSearch(q);
     } else {
         const summaryEl = document.getElementById("searchSummary");
