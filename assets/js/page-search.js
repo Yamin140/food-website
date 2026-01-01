@@ -1,9 +1,19 @@
-import { db } from "../firebase/conf.js";
+import { auth, db } from "../firebase/conf.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 import {
+    addDoc,
     collection,
+    deleteDoc,
+    doc,
+    getDoc,
     getDocs,
+    onSnapshot,
     orderBy,
     query,
+    serverTimestamp,
+    setDoc,
+    updateDoc,
+    writeBatch,
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 function escapeHtml(input) {
@@ -67,6 +77,456 @@ function setQueryParam(name, value) {
         url.searchParams.delete(name);
     }
     window.history.replaceState({}, "", url.toString());
+}
+
+let cartUser = null;
+let cartItems = [];
+let cartUnsub = null;
+
+let userProfileCache = null;
+
+let authReadyResolved = false;
+let resolveAuthReady = null;
+const authReady = new Promise((resolve) => {
+    resolveAuthReady = resolve;
+});
+
+const headerCartBtn = document.getElementById("headerCartBtn");
+const headerCartCountEl = document.getElementById("headerCartCount");
+
+const cartOverlayEl = document.getElementById("cartOverlay");
+const cartDrawerEl = document.getElementById("cartDrawer");
+const cartDrawerCloseEl = document.getElementById("cartDrawerClose");
+const cartItemsListEl = document.getElementById("cartItemsList");
+const cartEmptyStateEl = document.getElementById("cartEmptyState");
+const cartTotalEl = document.getElementById("cartTotal");
+const cartClearBtn = document.getElementById("cartClearBtn");
+const cartCheckoutBtn = document.getElementById("cartCheckoutBtn");
+
+const checkoutForm = document.getElementById("checkoutForm");
+const checkoutNameEl = document.getElementById("checkoutName");
+const checkoutPhoneEl = document.getElementById("checkoutPhone");
+const checkoutAddressEl = document.getElementById("checkoutAddress");
+const checkoutNoteEl = document.getElementById("checkoutNote");
+const checkoutConfirmBtn = document.getElementById("checkoutConfirmBtn");
+
+function parsePrice(input) {
+    const n = typeof input === "number" ? input : Number(String(input || "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+}
+
+function getCartQtyTotal() {
+    return cartItems.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
+}
+
+function getCartTotal() {
+    return cartItems.reduce((sum, it) => sum + parsePrice(it.price) * (Number(it.qty) || 0), 0);
+}
+
+function setCartCount(n) {
+    if (!headerCartCountEl) return;
+    headerCartCountEl.textContent = String(Math.max(0, n || 0));
+}
+
+function openCartDrawer() {
+    document.body.classList.add("cart-open");
+    if (cartOverlayEl) cartOverlayEl.setAttribute("aria-hidden", "false");
+    if (cartDrawerEl) cartDrawerEl.setAttribute("aria-hidden", "false");
+}
+
+function closeCartDrawer() {
+    document.body.classList.remove("cart-open");
+    if (cartOverlayEl) cartOverlayEl.setAttribute("aria-hidden", "true");
+    if (cartDrawerEl) cartDrawerEl.setAttribute("aria-hidden", "true");
+}
+
+function showModalById(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (window.bootstrap && window.bootstrap.Modal) {
+        if (typeof window.bootstrap.Modal.getOrCreateInstance === "function") {
+            window.bootstrap.Modal.getOrCreateInstance(el).show();
+        } else {
+            new window.bootstrap.Modal(el).show();
+        }
+        return;
+    }
+    if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === "function") {
+        window.jQuery(el).modal("show");
+    }
+}
+
+function hideModalById(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (window.bootstrap && window.bootstrap.Modal) {
+        try {
+            if (typeof window.bootstrap.Modal.getInstance === "function") {
+                const inst = window.bootstrap.Modal.getInstance(el);
+                if (inst && typeof inst.hide === "function") {
+                    inst.hide();
+                    return;
+                }
+            }
+            const instLegacy = new window.bootstrap.Modal(el);
+            if (instLegacy && typeof instLegacy.hide === "function") {
+                instLegacy.hide();
+                return;
+            }
+        } catch {
+        }
+    }
+    if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === "function") {
+        window.jQuery(el).modal("hide");
+    }
+}
+
+async function ensureUserProfileDoc(user) {
+    if (!user) return;
+    const ref = doc(db, "users", user.uid);
+    const snap = await getDoc(ref);
+    if (snap.exists()) return;
+
+    await setDoc(ref, {
+        userId: user.uid,
+        name: user.displayName || "",
+        email: user.email || "",
+        phone: "",
+        address: "",
+        note: "",
+        isAdmin: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    }, { merge: true });
+}
+
+async function loadUserProfile(uid) {
+    if (!uid) return null;
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) return null;
+    return snap.data() || null;
+}
+
+function autofillCheckoutFromProfile(profile) {
+    if (!profile) return;
+    if (checkoutNameEl) checkoutNameEl.value = (profile.name || "").toString();
+    if (checkoutPhoneEl) checkoutPhoneEl.value = (profile.phone || "").toString();
+    if (checkoutAddressEl) checkoutAddressEl.value = (profile.address || "").toString();
+    if (checkoutNoteEl) checkoutNoteEl.value = (profile.note || "").toString();
+}
+
+function renderCart() {
+    setCartCount(getCartQtyTotal());
+
+    if (!cartItemsListEl || !cartTotalEl || !cartEmptyStateEl) return;
+
+    const total = getCartTotal();
+    cartTotalEl.textContent = String(total);
+
+    if (!cartItems.length) {
+        cartItemsListEl.innerHTML = "";
+        cartEmptyStateEl.style.display = "block";
+        return;
+    }
+
+    cartEmptyStateEl.style.display = "none";
+
+    cartItemsListEl.innerHTML = cartItems.map((it) => {
+        const title = escapeHtml(it.title || "");
+        const price = parsePrice(it.price);
+        const qty = Number(it.qty) || 0;
+        const img = typeof it.imageUrl === "string" ? it.imageUrl : "";
+        const imgHtml = img ? `<img src="${escapeHtml(img)}" alt="">` : "";
+
+        return `
+            <div class="cart-item" data-id="${escapeHtml(it.id || it.itemId || "")}">
+                <div class="cart-item-img">${imgHtml}</div>
+                <div class="cart-item-info">
+                    <p class="cart-item-title">${title}</p>
+                    <div class="cart-item-meta">
+                        <span class="cart-item-price">Tk. ${escapeHtml(price)}</span>
+                        <div class="cart-qty">
+                            <button type="button" class="cart-qty-btn" data-action="dec">-</button>
+                            <span class="cart-qty-value">${escapeHtml(qty)}</span>
+                            <button type="button" class="cart-qty-btn" data-action="inc">+</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="cart-item-remove" data-action="remove">×</button>
+            </div>
+        `;
+    }).join("");
+}
+
+function listenCart(uid) {
+    if (cartUnsub) {
+        try { cartUnsub(); } catch { }
+        cartUnsub = null;
+    }
+
+    cartItems = [];
+    renderCart();
+
+    const col = collection(db, "carts", uid, "items");
+    const q = query(col, orderBy("createdAt", "desc"));
+    cartUnsub = onSnapshot(q, (snap) => {
+        cartItems = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+        renderCart();
+    });
+}
+
+async function addToCartByItem(item) {
+    await authReady;
+    if (!cartUser) {
+        window.alert("Please login first to add items to cart.");
+        window.location.href = "login.html";
+        return;
+    }
+
+    const id = item && item.id ? String(item.id) : "";
+    if (!id) return;
+
+    const docRef = doc(db, "carts", cartUser.uid, "items", id);
+    const snap = await getDoc(docRef);
+    const prevQty = snap.exists() ? (Number(snap.data()?.qty) || 0) : 0;
+    const nextQty = prevQty + 1;
+
+    const imageUrl = typeof item.imageUrl === "string" ? normalizeDriveImageUrl(item.imageUrl) : "";
+    const title = typeof item.title === "string" ? item.title : "";
+    const price = parsePrice(item.price);
+
+    if (snap.exists()) {
+        await updateDoc(docRef, { qty: nextQty, updatedAt: Date.now() });
+    } else {
+        await setDoc(docRef, {
+            itemId: id,
+            title,
+            price,
+            imageUrl: imageUrl || "",
+            qty: nextQty,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        });
+    }
+
+    openCartDrawer();
+}
+
+async function updateCartQty(itemId, delta) {
+    if (!cartUser) return;
+    const id = String(itemId || "");
+    if (!id) return;
+    const docRef = doc(db, "carts", cartUser.uid, "items", id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return;
+    const current = Number(snap.data()?.qty) || 0;
+    const next = current + (Number(delta) || 0);
+    if (next <= 0) {
+        await deleteDoc(docRef);
+        return;
+    }
+    await updateDoc(docRef, { qty: next, updatedAt: Date.now() });
+}
+
+async function removeCartItem(itemId) {
+    if (!cartUser) return;
+    const id = String(itemId || "");
+    if (!id) return;
+    await deleteDoc(doc(db, "carts", cartUser.uid, "items", id));
+}
+
+async function clearCart() {
+    if (!cartUser) return;
+    const col = collection(db, "carts", cartUser.uid, "items");
+    const snap = await getDocs(col);
+    const batch = writeBatch(db);
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+}
+
+async function submitOrder(payload) {
+    if (!cartUser) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    const items = cartItems.map((it) => ({
+        itemId: it.itemId || it.id,
+        title: it.title || "",
+        price: parsePrice(it.price),
+        qty: Number(it.qty) || 0,
+        imageUrl: it.imageUrl || "",
+    })).filter((x) => x.itemId && x.qty > 0);
+
+    if (!items.length) return;
+
+    const total = items.reduce((sum, it) => sum + parsePrice(it.price) * (Number(it.qty) || 0), 0);
+
+    await addDoc(collection(db, "orders"), {
+        userId: cartUser.uid,
+        userEmail: cartUser.email || "",
+        name: payload.name,
+        phone: payload.phone,
+        address: payload.address,
+        note: payload.note || "",
+        items,
+        total,
+        status: "pending",
+        cancelReason: "",
+        cancelledAt: null,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+    });
+
+    try {
+        await ensureUserProfileDoc(cartUser);
+        await setDoc(doc(db, "users", cartUser.uid), {
+            userId: cartUser.uid,
+            name: payload.name,
+            email: cartUser.email || "",
+            phone: payload.phone,
+            address: payload.address,
+            note: payload.note || "",
+            updatedAt: serverTimestamp(),
+        }, { merge: true });
+    } catch {
+    }
+
+    await clearCart();
+}
+
+function setupCartSystem() {
+    if (document.body && document.body.dataset && document.body.dataset.cartSystemBound === "1") return;
+    if (document.body && document.body.dataset) document.body.dataset.cartSystemBound = "1";
+
+    if (headerCartBtn) {
+        headerCartBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            openCartDrawer();
+        });
+    }
+
+    if (cartDrawerCloseEl) {
+        cartDrawerCloseEl.addEventListener("click", () => closeCartDrawer());
+    }
+
+    if (cartOverlayEl) {
+        cartOverlayEl.addEventListener("click", () => closeCartDrawer());
+    }
+
+    window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            closeCartDrawer();
+        }
+    });
+
+    if (cartItemsListEl) {
+        cartItemsListEl.addEventListener("click", async (e) => {
+            const itemEl = e.target.closest(".cart-item");
+            if (!itemEl) return;
+            const id = itemEl.getAttribute("data-id") || "";
+            const actionBtn = e.target.closest("[data-action]");
+            const action = actionBtn ? (actionBtn.getAttribute("data-action") || "") : "";
+            if (!id || !action) return;
+            try {
+                if (action === "inc") await updateCartQty(id, 1);
+                if (action === "dec") await updateCartQty(id, -1);
+                if (action === "remove") await removeCartItem(id);
+            } catch {
+            }
+        });
+    }
+
+    if (cartClearBtn) {
+        cartClearBtn.addEventListener("click", async () => {
+            try {
+                await clearCart();
+            } catch {
+            }
+        });
+    }
+
+    if (cartCheckoutBtn) {
+        cartCheckoutBtn.addEventListener("click", async () => {
+            if (!cartUser) {
+                window.location.href = "login.html";
+                return;
+            }
+            try {
+                await ensureUserProfileDoc(cartUser);
+                userProfileCache = await loadUserProfile(cartUser.uid);
+                autofillCheckoutFromProfile(userProfileCache);
+            } catch {
+                userProfileCache = null;
+            }
+            showModalById("checkoutModal");
+        });
+    }
+
+    if (checkoutForm) {
+        checkoutForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!cartUser) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            const name = (checkoutNameEl ? checkoutNameEl.value : "").toString().trim();
+            const phone = (checkoutPhoneEl ? checkoutPhoneEl.value : "").toString().trim();
+            const address = (checkoutAddressEl ? checkoutAddressEl.value : "").toString().trim();
+            const note = (checkoutNoteEl ? checkoutNoteEl.value : "").toString().trim();
+
+            if (!name || !phone || !address) return;
+            if (checkoutConfirmBtn) checkoutConfirmBtn.disabled = true;
+
+            try {
+                await submitOrder({ name, phone, address, note });
+                if (checkoutNameEl) checkoutNameEl.value = "";
+                if (checkoutPhoneEl) checkoutPhoneEl.value = "";
+                if (checkoutAddressEl) checkoutAddressEl.value = "";
+                if (checkoutNoteEl) checkoutNoteEl.value = "";
+                hideModalById("checkoutModal");
+                closeCartDrawer();
+                showModalById("orderSuccessModal");
+            } catch {
+            } finally {
+                if (checkoutConfirmBtn) checkoutConfirmBtn.disabled = false;
+            }
+        });
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        cartUser = user || null;
+
+        if (!authReadyResolved) {
+            authReadyResolved = true;
+            if (typeof resolveAuthReady === "function") {
+                resolveAuthReady();
+            }
+        }
+
+        if (!cartUser) {
+            if (cartUnsub) {
+                try { cartUnsub(); } catch { }
+                cartUnsub = null;
+            }
+            cartItems = [];
+            renderCart();
+            userProfileCache = null;
+            return;
+        }
+
+        (async () => {
+            try {
+                await ensureUserProfileDoc(cartUser);
+                userProfileCache = await loadUserProfile(cartUser.uid);
+            } catch {
+                userProfileCache = null;
+            }
+        })();
+
+        listenCart(cartUser.uid);
+    });
 }
 
 function splitTerms(q) {
@@ -183,6 +643,7 @@ function renderResults(container, results) {
 
             const col = document.createElement("div");
             col.className = "col-12 col-sm-6 col-md-4 col-lg-4 dish-box-wp all";
+            col.setAttribute("data-item-id", escapeHtml(r.id || ""));
             col.innerHTML = `
                 <div class="dish-box text-center">
                     <div class="dist-img">
@@ -214,9 +675,9 @@ function renderResults(container, results) {
                                 <b>Tk. ${price}</b>
                             </li>
                             <li>
-                                <a class="dish-add-btn" href="${escapeHtml(r.url || "index.html#menu")}" title="${description}" role="button">
+                                <button class="dish-add-btn" type="button" title="${description}" data-action="addToCart">
                                     <i class="uil uil-plus"></i>
-                                </a>
+                                </button>
                             </li>
                         </ul>
                     </div>
@@ -291,6 +752,11 @@ async function runSearch(q) {
     try {
         const [menuItems, blogPosts] = await Promise.all([fetchMenuItems(), fetchBlogPosts()]);
 
+        window.__menuItemsById = window.__menuItemsById || {};
+        menuItems.forEach((it) => {
+            if (it && it.id) window.__menuItemsById[String(it.id)] = it;
+        });
+
         const docs = [
             ...menuItems.map(buildMenuDoc),
             ...blogPosts.map(buildBlogDoc),
@@ -357,6 +823,28 @@ function init() {
             runSearch(value);
         });
     }
+
+    const resultsEl = document.getElementById("searchResults");
+    if (resultsEl && !resultsEl.dataset.cartBound) {
+        resultsEl.dataset.cartBound = "1";
+        resultsEl.addEventListener("click", async (e) => {
+            const btn = e.target.closest(".dish-add-btn");
+            if (!btn) return;
+            const box = btn.closest(".dish-box-wp");
+            const id = box ? box.getAttribute("data-item-id") : "";
+            if (!id) return;
+            const item = window.__menuItemsById ? window.__menuItemsById[String(id)] : null;
+            if (!item) return;
+            try {
+                await addToCartByItem(item);
+            } catch (err) {
+                console.error("Add to cart failed", err);
+                window.alert("Add to cart failed. Please try again.");
+            }
+        });
+    }
+
+    setupCartSystem();
 
     if ((q && q.trim()) || (itemId && itemId.trim())) {
         runSearch(q);

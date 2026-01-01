@@ -55,9 +55,9 @@
                                 </button>
                             </form>
 
-                            <a href="javascript:void(0)" class="header-btn header-cart">
+                            <a href="javascript:void(0)" class="header-btn header-cart" id="headerCartBtn">
                                 <i class="uil uil-shopping-bag"></i>
-                                <span class="cart-number">0</span>
+                                <span class="cart-number" id="headerCartCount">0</span>
                             </a>
 
                             <a href="login.html" id="headerLoginBtn" class="header-btn" aria-label="Login">
@@ -91,6 +91,84 @@
             </div>
         </div>
     </main>
+
+    <div class="cart-overlay" id="cartOverlay" aria-hidden="true"></div>
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+        <div class="cart-drawer-header">
+            <h5 class="cart-drawer-title">Your Cart</h5>
+            <button type="button" class="cart-drawer-close" id="cartDrawerClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="cart-drawer-body">
+            <div id="cartItemsList" class="cart-items"></div>
+            <div id="cartEmptyState" class="text-muted" style="display:none;">Your cart is empty.</div>
+        </div>
+        <div class="cart-drawer-footer">
+            <div class="cart-total-row">
+                <span>Total</span>
+                <strong id="cartTotal">0</strong>
+            </div>
+            <div class="cart-actions">
+                <button type="button" class="sec-btn" id="cartClearBtn">Clear</button>
+                <button type="button" class="sec-btn primary-btn" id="cartCheckoutBtn">Checkout</button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="modal fade" id="checkoutModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Checkout</h5>
+                    <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="checkoutForm" action="#" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label" for="checkoutName">Name</label>
+                            <input type="text" class="form-input" id="checkoutName" placeholder="Enter your name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="checkoutPhone">Phone Number</label>
+                            <input type="tel" class="form-input" id="checkoutPhone" placeholder="Enter phone number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="checkoutAddress">Address</label>
+                            <textarea class="form-input" id="checkoutAddress" rows="3" placeholder="Enter delivery address" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="checkoutNote">Note (Optional)</label>
+                            <textarea class="form-input" id="checkoutNote" rows="2" placeholder="Any note..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="sec-btn" data-dismiss="modal" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="sec-btn primary-btn" id="checkoutConfirmBtn">Confirm Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="orderSuccessModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Order Placed</h5>
+                    <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Your order has been placed successfully.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="sec-btn" data-dismiss="modal" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="assets/js/jquery-3.5.1.min.js"></script>
     <script src="assets/js/bootstrap.min.js"></script>
